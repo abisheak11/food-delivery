@@ -1,0 +1,3 @@
+@echo off
+echo Stopping all Food Delivery microservices...
+powershell -ExecutionPolicy Bypass -File "%~dp0stop-all.ps1"

@@ -1,0 +1,30 @@
+# Start all Food Delivery microservices concurrently
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host " Starting Food Delivery Microservices Suite...     " -ForegroundColor Cyan
+Write-Host "==================================================" -ForegroundColor Cyan
+
+$root = $PSScriptRoot
+
+# Ensure Kafka & Zookeeper are running in Docker
+Write-Host "[0/4] Starting Kafka & Zookeeper containers..." -ForegroundColor Yellow
+docker compose up -d zookeeper kafka
+
+# Start Auth Service (8081)
+Write-Host "[1/4] Starting Auth Service on port 8081..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\auth-service'; Write-Host '--- AUTH SERVICE (8081) ---' -ForegroundColor Yellow; mvn spring-boot:run"
+
+# Start Order Service (8082)
+Write-Host "[2/4] Starting Order Service on port 8082..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\order-service'; Write-Host '--- ORDER SERVICE (8082) ---' -ForegroundColor Yellow; mvn spring-boot:run"
+
+# Start Restaurant Service (8083)
+Write-Host "[3/4] Starting Restaurant Service on port 8083..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\restaurant-service'; Write-Host '--- RESTAURANT SERVICE (8083) ---' -ForegroundColor Yellow; mvn spring-boot:run"
+
+# Start API Gateway (8090)
+Write-Host "[4/4] Starting API Gateway & Swagger Hub on port 8090..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\api-gateway'; Write-Host '--- API GATEWAY (8090) ---' -ForegroundColor Yellow; mvn spring-boot:run"
+
+Write-Host "`nAll 4 services are launching in parallel!" -ForegroundColor Cyan
+Write-Host "Unified Swagger UI: http://localhost:8090/swagger-ui.html" -ForegroundColor Yellow
+Write-Host "To stop all running services at once, run: .\stop-all.ps1`n" -ForegroundColor DarkGray
