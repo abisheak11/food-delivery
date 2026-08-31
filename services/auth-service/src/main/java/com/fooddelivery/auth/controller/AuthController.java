@@ -14,7 +14,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+    // register
+    // login
+    // validate token
+    // get current user
+    // get user by id
+    // health check
     private final AuthService authService;
 
     @PostMapping("/register")
