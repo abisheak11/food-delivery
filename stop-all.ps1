@@ -1,7 +1,7 @@
 # Stop all running microservices by port (8081, 8082, 8083, 8090)
 Write-Host "Stopping all Food Delivery microservices..." -ForegroundColor Yellow
 
-$ports = @(8081, 8082, 8083, 8090)
+$ports = @(8081, 8082, 8083, 8084, 8090)
 
 foreach ($port in $ports) {
     $processes = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
