@@ -4,7 +4,6 @@ import com.fooddelivery.delivery.dto.DeliveryPartnerProfileRequest;
 import com.fooddelivery.delivery.dto.DeliveryPartnerResponse;
 import com.fooddelivery.delivery.dto.UpdateAvailabilityRequest;
 import com.fooddelivery.delivery.dto.UpdateLocationRequest;
-import com.fooddelivery.delivery.exception.BadRequestException;
 import com.fooddelivery.delivery.exception.ResourceNotFoundException;
 import com.fooddelivery.delivery.model.DeliveryPartner;
 import com.fooddelivery.delivery.model.PartnerStatus;

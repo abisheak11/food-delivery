@@ -87,6 +87,21 @@ services:
     networks:
       - food-delivery-net
 
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment-service/Dockerfile
+    container_name: payment-service
+    depends_on:
+      - kafka
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - food-delivery-net
+
   api-gateway:
     build:
       context: .
@@ -99,6 +114,7 @@ services:
       - order-service
       - restaurant-service
       - delivery-service
+      - payment-service
     networks:
       - food-delivery-net
 

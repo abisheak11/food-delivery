@@ -3,7 +3,6 @@ package com.fooddelivery.delivery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fooddelivery.delivery.dto.*;
 import com.fooddelivery.delivery.model.DeliveryStatus;
-import com.fooddelivery.delivery.model.PartnerStatus;
 import com.fooddelivery.delivery.model.VehicleType;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
