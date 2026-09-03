@@ -3,6 +3,7 @@ package com.fooddelivery.order.service;
 import com.fooddelivery.order.dto.*;
 import com.fooddelivery.order.event.OrderCreatedEvent;
 import com.fooddelivery.order.event.OrderItemEventDto;
+import com.fooddelivery.order.event.PaymentProcessedEvent;
 import com.fooddelivery.order.exception.InvalidOrderStateException;
 import com.fooddelivery.order.exception.ResourceNotFoundException;
 import com.fooddelivery.order.exception.UnauthorizedOrderAccessException;
@@ -10,9 +11,11 @@ import com.fooddelivery.order.kafka.OrderEventProducer;
 import com.fooddelivery.order.model.Order;
 import com.fooddelivery.order.model.OrderItem;
 import com.fooddelivery.order.model.OrderStatus;
+import com.fooddelivery.order.model.PaymentStatus;
 import com.fooddelivery.order.repository.OrderRepository;
 import com.fooddelivery.order.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -42,6 +46,7 @@ public class OrderService {
                 .contactPhone(request.getContactPhone())
                 .specialInstructions(request.getSpecialInstructions())
                 .status(OrderStatus.PLACED)
+                .paymentStatus(PaymentStatus.PENDING)
                 .build();
 
         for (OrderItemRequest itemReq : request.getItems()) {
@@ -61,7 +66,7 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
         Order savedOrder = orderRepository.save(order);
 
-        // Publish OrderCreatedEvent to Kafka topic
+        // Publish OrderCreatedEvent to Kafka topic (consumed by payment-service to initialize payment record)
         List<OrderItemEventDto> eventItems = savedOrder.getItems().stream()
                 .map(item -> OrderItemEventDto.builder()
                         .itemName(item.getItemName())
@@ -88,6 +93,64 @@ public class OrderService {
 
         return mapToOrderResponse(savedOrder);
     }
+
+    @Transactional
+    public void handlePaymentProcessedEvent(PaymentProcessedEvent event) {
+        log.info("Processing PaymentProcessedEvent in OrderService: orderId={}, orderNumber={}, status={}",
+                event.getOrderId(), event.getOrderNumber(), event.getPaymentStatus());
+
+        Order order = null;
+        if (event.getOrderId() != null) {
+            order = orderRepository.findById(event.getOrderId()).orElse(null);
+        }
+        if (order == null && event.getOrderNumber() != null) {
+            order = orderRepository.findByOrderNumber(event.getOrderNumber()).orElse(null);
+        }
+
+        if (order == null) {
+            log.warn("Order not found for PaymentProcessedEvent: orderId={}, orderNumber={}",
+                    event.getOrderId(), event.getOrderNumber());
+            return;
+        }
+
+        if ("SUCCESS".equalsIgnoreCase(event.getPaymentStatus())) {
+            order.setPaymentStatus(PaymentStatus.SUCCESS);
+            Order updatedOrder = orderRepository.save(order);
+            log.info("Order ID {} paymentStatus updated to SUCCESS. Broadcasting OrderPaidEvent to restaurant and delivery.", updatedOrder.getId());
+
+            // Build and broadcast OrderPaidEvent to restaurant & delivery services
+            List<OrderItemEventDto> eventItems = updatedOrder.getItems().stream()
+                    .map(item -> OrderItemEventDto.builder()
+                            .itemName(item.getItemName())
+                            .quantity(item.getQuantity())
+                            .price(item.getPrice())
+                            .subTotal(item.getSubTotal())
+                            .build())
+                    .collect(Collectors.toList());
+
+            OrderCreatedEvent paidEvent = OrderCreatedEvent.builder()
+                    .orderId(updatedOrder.getId())
+                    .orderNumber(updatedOrder.getOrderNumber())
+                    .userId(updatedOrder.getUserId())
+                    .restaurantId(updatedOrder.getRestaurantId())
+                    .totalAmount(updatedOrder.getTotalAmount())
+                    .deliveryAddress(updatedOrder.getDeliveryAddress())
+                    .contactPhone(updatedOrder.getContactPhone())
+                    .specialInstructions(updatedOrder.getSpecialInstructions())
+                    .items(eventItems)
+                    .createdAt(updatedOrder.getCreatedAt())
+                    .build();
+
+            orderEventProducer.sendOrderPaidEvent(paidEvent);
+        } else if ("FAILED".equalsIgnoreCase(event.getPaymentStatus())) {
+            order.setPaymentStatus(PaymentStatus.FAILED);
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            log.warn("Order ID {} paymentStatus updated to FAILED and status to CANCELLED. Reason: {}", order.getId(), event.getFailureReason());
+        }
+    }
+
+
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id, UserPrincipal currentUser) {
@@ -177,6 +240,7 @@ public class OrderService {
                 .restaurantId(order.getRestaurantId())
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
+                .paymentStatus(order.getPaymentStatus())
                 .deliveryAddress(order.getDeliveryAddress())
                 .contactPhone(order.getContactPhone())
                 .specialInstructions(order.getSpecialInstructions())
@@ -186,3 +250,4 @@ public class OrderService {
                 .build();
     }
 }
+

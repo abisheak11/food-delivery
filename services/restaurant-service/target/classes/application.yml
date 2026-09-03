@@ -41,4 +41,6 @@ app:
   kafka:
     topics:
       order-created: order-created
+      order-paid: order-paid
       restaurant-order-decision: restaurant-order-decision
+

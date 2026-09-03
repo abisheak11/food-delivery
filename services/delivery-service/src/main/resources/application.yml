@@ -41,7 +41,9 @@ app:
   kafka:
     topics:
       order-created: order-created
+      order-paid: order-paid
       delivery-status: delivery-status-updated
+
 
 # Springdoc OpenAPI Configuration
 springdoc:

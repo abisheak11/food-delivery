@@ -18,25 +18,42 @@ A modern Spring Boot microservices backend for a Food Delivery platform, powered
 ## Event-Driven Architecture (Kafka)
 
 ```
-[Customer] -> Places Order (Status: PLACED)
+[Customer] -> Places Order (Initial Status: PENDING_PAYMENT)
      |
   (order-service)
      |-- Publishes "order-created" event --> [Kafka: order-created]
-                                                   |----------------------------------------------------+
-                                                   |                                                    |
-                                      (restaurant-service) receives order                 (payment-service) receives order
-                                                   |                                           (Initializes PENDING payment)
-                                       [Restaurant Owner Reviews]                                       |
-                                                   |                                           [Customer Pays]
-                                       Accepts/Rejects order                               POST /api/payments/process
-                                                   |                                                    |
-                                       "restaurant-order-decision"                         Publishes "payment-processed"
-                                                   |                                                    |
-                                                   +------------------------+---------------------------+
-                                                                            |
-                                                                     (order-service)
-                                                    Updates Order Status: CONFIRMED / CANCELLED
+                                                   |
+                                          (payment-service) pre-registers payment ledger
+                                                   |
+                                      [Customer Processes Payment]
+                                      POST /api/payments/process
+                                                   |
+                                      Publishes "payment-processed" (SUCCESS / FAILED)
+                                                   |
+                                            (order-service)
+                         +-------------------------+-------------------------+
+                         |                                                   |
+                  Payment SUCCESS (or COD)                            Payment FAILED
+                         |                                                   |
+             Order Status -> PAID                                Order Status -> PAYMENT_FAILED
+                         |                                            (Order is NOT sent to kitchen)
+             Publishes "order-paid" event
+                         |
+      +------------------+------------------+
+      |                                     |
+(restaurant-service)                  (delivery-service)
+Creates Restaurant Order              Creates Delivery Task
+(Status: PENDING kitchen approval)    (Status: PENDING courier assignment)
+      |
+[Restaurant Reviews Order]
+PUT /api/restaurants/orders/{id}/decision
+      |
+Publishes "restaurant-order-decision" (ACCEPTED / REJECTED)
+      |
+(order-service)
+Order Status -> CONFIRMED / CANCELLED
 ```
+
 
 ---
 

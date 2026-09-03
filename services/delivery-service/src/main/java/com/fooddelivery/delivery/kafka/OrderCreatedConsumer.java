@@ -20,8 +20,9 @@ public class OrderCreatedConsumer {
 
     private final DeliveryTaskRepository deliveryTaskRepository;
 
-    @KafkaListener(topics = "${app.kafka.topics.order-created:order-created}", groupId = "${spring.kafka.consumer.group-id:delivery-service-group}")
+    @KafkaListener(topics = "${app.kafka.topics.order-paid:order-paid}", groupId = "${spring.kafka.consumer.group-id:delivery-service-group}")
     public void handleOrderCreated(OrderCreatedEvent event) {
+
         logger.info("Received OrderCreatedEvent for order #{}: total={}", event.getOrderNumber(), event.getTotalAmount());
 
         try {

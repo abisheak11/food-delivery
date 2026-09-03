@@ -19,6 +19,9 @@ public class OrderEventProducer {
     @Value("${app.kafka.topics.order-created:order-created}")
     private String orderCreatedTopic;
 
+    @Value("${app.kafka.topics.order-paid:order-paid}")
+    private String orderPaidTopic;
+
     public void sendOrderCreatedEvent(OrderCreatedEvent event) {
         logger.info("Publishing OrderCreatedEvent to Kafka topic '{}': orderId={}, orderNumber={}, restaurantId={}",
                 orderCreatedTopic, event.getOrderId(), event.getOrderNumber(), event.getRestaurantId());
@@ -32,4 +35,19 @@ public class OrderEventProducer {
                     }
                 });
     }
+
+    public void sendOrderPaidEvent(OrderCreatedEvent event) {
+        logger.info("Publishing OrderPaidEvent to Kafka topic '{}': orderId={}, orderNumber={}, restaurantId={}",
+                orderPaidTopic, event.getOrderId(), event.getOrderNumber(), event.getRestaurantId());
+
+        kafkaTemplate.send(orderPaidTopic, event.getOrderNumber(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        logger.info("Successfully sent OrderPaidEvent: offset={}", result.getRecordMetadata().offset());
+                    } else {
+                        logger.error("Failed to send OrderPaidEvent for orderId={}: {}", event.getOrderId(), ex.getMessage());
+                    }
+                });
+    }
 }
+

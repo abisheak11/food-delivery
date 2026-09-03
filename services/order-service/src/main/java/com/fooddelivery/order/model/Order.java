@@ -36,7 +36,13 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private OrderStatus status;
+    @Builder.Default
+    private OrderStatus status = OrderStatus.PLACED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 30)
+    @Builder.Default
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
     @Column(nullable = false, length = 255)
     private String deliveryAddress;
@@ -75,7 +81,11 @@ public class Order {
         if (status == null) {
             status = OrderStatus.PLACED;
         }
+        if (paymentStatus == null) {
+            paymentStatus = PaymentStatus.PENDING;
+        }
     }
+
 
     @PreUpdate
     protected void onUpdate() {

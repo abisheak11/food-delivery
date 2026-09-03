@@ -100,6 +100,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.userId", is(101)))
                 .andExpect(jsonPath("$.restaurantId", is(50)))
                 .andExpect(jsonPath("$.status", is("PLACED")))
+                .andExpect(jsonPath("$.paymentStatus", is("PENDING")))
                 .andExpect(jsonPath("$.totalAmount", is(30.48)))
                 .andExpect(jsonPath("$.items", hasSize(2)))
                 .andReturn();
@@ -112,6 +113,8 @@ class OrderControllerTest {
                         .header("Authorization", "Bearer " + customerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(orderId.intValue())))
+                .andExpect(jsonPath("$.status", is("PLACED")))
+                .andExpect(jsonPath("$.paymentStatus", is("PENDING")))
                 .andExpect(jsonPath("$.items", hasSize(2)));
 
         // 3. Fetch customer's orders
@@ -138,4 +141,40 @@ class OrderControllerTest {
         mockMvc.perform(get("/api/orders/my-orders"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void testPaymentProcessedSuccessFlow() throws Exception {
+        CreateOrderRequest request = CreateOrderRequest.builder()
+                .restaurantId(10L)
+                .deliveryAddress("456 Elm St")
+                .contactPhone("1234567890")
+                .items(List.of(OrderItemRequest.builder()
+                        .itemName("Burger")
+                        .quantity(1)
+                        .price(new BigDecimal("10.00"))
+                        .build()))
+                .build();
+
+        MvcResult result = mockMvc.perform(post("/api/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status", is("PLACED")))
+                .andExpect(jsonPath("$.paymentStatus", is("PENDING")))
+                .andReturn();
+
+        Number orderIdNum = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").numberValue();
+        Long orderId = orderIdNum.longValue();
+
+        // 2. Fetch order by ID and verify initial state
+        mockMvc.perform(get("/api/orders/" + orderId)
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("PLACED")))
+                .andExpect(jsonPath("$.paymentStatus", is("PENDING")));
+    }
 }
+
+
+

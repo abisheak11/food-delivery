@@ -22,9 +22,10 @@ public class OrderCreatedConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "${app.kafka.topics.order-created:order-created}",
+            topics = "${app.kafka.topics.order-paid:order-paid}",
             groupId = "${spring.kafka.consumer.group-id:restaurant-service-group}"
     )
+
     @Transactional
     public void handleOrderCreated(OrderCreatedEvent event) {
         logger.info("Received OrderCreatedEvent from Kafka for restaurantId={}, orderId={}, orderNumber={}",

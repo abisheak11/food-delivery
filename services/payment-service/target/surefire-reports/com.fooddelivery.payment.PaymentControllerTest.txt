@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.fooddelivery.payment.PaymentControllerTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.47 s -- in com.fooddelivery.payment.PaymentControllerTest

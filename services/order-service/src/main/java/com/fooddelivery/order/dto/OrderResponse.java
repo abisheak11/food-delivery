@@ -1,6 +1,7 @@
 package com.fooddelivery.order.dto;
 
 import com.fooddelivery.order.model.OrderStatus;
+import com.fooddelivery.order.model.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,8 @@ public class OrderResponse {
     private Long restaurantId;
     private BigDecimal totalAmount;
     private OrderStatus status;
+    private PaymentStatus paymentStatus;
+
     private String deliveryAddress;
     private String contactPhone;
     private String specialInstructions;
