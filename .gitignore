@@ -1,0 +1,35 @@
+# Maven Target directories (all services)
+target/
+**/target/
+*.class
+
+# IDE and Editor Files
+.idea/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Log files
+*.log
+logs/
+**/logs/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files and dumps
+*.tmp
+*.bak
+*.swp
+*~
+
+# Database files
+*.db
+*.h2.db
