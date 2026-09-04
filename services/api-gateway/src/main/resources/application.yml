@@ -28,6 +28,10 @@ spring:
             uri: http://localhost:8085
             predicates:
               - Path=/api/payments/**
+          - id: search-service
+            uri: http://localhost:8086
+            predicates:
+              - Path=/api/search/**
           - id: auth-service-docs
             uri: http://localhost:8081
             predicates:
@@ -58,6 +62,12 @@ spring:
               - Path=/payment-docs/**
             filters:
               - StripPrefix=1
+          - id: search-service-docs
+            uri: http://localhost:8086
+            predicates:
+              - Path=/search-docs/**
+            filters:
+              - StripPrefix=1
 
 # Springdoc / Swagger Aggregator Configuration
 springdoc:
@@ -81,3 +91,5 @@ springdoc:
         url: /delivery-docs/v3/api-docs
       - name: 5. Payment Service (8085)
         url: /payment-docs/v3/api-docs
+      - name: 6. Search Service (8086)
+        url: /search-docs/v3/api-docs

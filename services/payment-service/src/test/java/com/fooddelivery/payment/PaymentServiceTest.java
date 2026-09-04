@@ -2,8 +2,6 @@ package com.fooddelivery.payment;
 
 import com.fooddelivery.payment.dto.PaymentRequestDto;
 import com.fooddelivery.payment.dto.PaymentResponseDto;
-import com.fooddelivery.payment.dto.RefundRequestDto;
-import com.fooddelivery.payment.dto.RefundResponseDto;
 import com.fooddelivery.payment.event.OrderCreatedEvent;
 import com.fooddelivery.payment.exception.DuplicatePaymentException;
 import com.fooddelivery.payment.gateway.MockPaymentGateway;
@@ -11,7 +9,6 @@ import com.fooddelivery.payment.kafka.PaymentEventProducer;
 import com.fooddelivery.payment.model.Payment;
 import com.fooddelivery.payment.model.PaymentMethod;
 import com.fooddelivery.payment.model.PaymentStatus;
-import com.fooddelivery.payment.model.RefundStatus;
 import com.fooddelivery.payment.repository.PaymentRepository;
 import com.fooddelivery.payment.repository.RefundRepository;
 import com.fooddelivery.payment.service.PaymentServiceImpl;

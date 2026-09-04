@@ -45,7 +45,6 @@ class PaymentControllerTest {
         private String jwtSecret;
 
         private String customerToken;
-        private String adminToken;
 
         private String generateToken(Long userId, String username, List<String> roles) {
                 byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
@@ -66,7 +65,6 @@ class PaymentControllerTest {
         @BeforeEach
         void setUp() {
                 customerToken = generateToken(101L, "customer1", List.of("ROLE_CUSTOMER"));
-                adminToken = generateToken(1L, "admin", List.of("ROLE_ADMIN"));
         }
 
         @Test

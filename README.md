@@ -12,6 +12,7 @@ A modern Spring Boot microservices backend for a Food Delivery platform, powered
 | **`restaurant-service`** | `8083` | Restaurant & Menu management, Kafka order accept/reject | `http://localhost:8083/swagger-ui/index.html` |
 | **`delivery-service`** | `8084` | Delivery partner onboarding, GPS tracking, task assignment | `http://localhost:8084/swagger-ui/index.html` |
 | **`payment-service`** | `8085` | Payment processing, gateway integration, refunds & webhooks | `http://localhost:8085/swagger-ui/index.html` |
+| **`search-service`** | `8086` | Multi-criteria search for restaurants, cuisines, and food items | `http://localhost:8086/swagger-ui/index.html` |
 
 ---
 
@@ -67,6 +68,7 @@ Access all microservice documentation on **Port 8090**:
   - `3. Restaurant Service (8083)`
   - `4. Delivery Service (8084)`
   - `5. Payment Service (8085)`
+  - `6. Search Service (8086)`
 
 ---
 
@@ -200,3 +202,28 @@ curl -X POST http://localhost:8090/api/payments/refund \
 | `PUT` | `/api/deliveries/{id}/status` | Update delivery status (`PICKED_UP`, `DELIVERED`) | Yes (`ROLE_DELIVERY`) |
 | `GET` | `/api/deliveries/order/{orderId}` | Track delivery status for order | Yes (Bearer Token) |
 | `GET` | `/api/deliveries/health` | Health status | No |
+
+---
+
+### 6. Search Service (`http://localhost:8090/api/search` or `:8086`)
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/search/all?keyword={kw}` | **Unified Global Search** across restaurants & dishes | No |
+| `GET` | `/api/search/restaurants?query={q}&cuisine={c}&isOpen={bool}&minRating={r}` | **Search restaurants** with multi-criteria filters | No |
+| `GET` | `/api/search/items?query={q}&category={cat}&minPrice={min}&maxPrice={max}&isAvailable={bool}&cuisine={c}` | **Search food items / dishes** with price & category | No |
+| `GET` | `/api/search/restaurants-by-dish?dishName={dish}` | Find open restaurants serving a specific dish | No |
+| `GET` | `/api/search/cuisines` | List all available cuisines (Italian, Mexican, etc.) | No |
+| `GET` | `/api/search/categories` | List all available food categories (Pizza, Burger, etc.) | No |
+| `GET` | `/api/search/health` | Health status | No |
+
+#### Example: Search Dishes under $15
+```bash
+curl -X GET "http://localhost:8090/api/search/items?category=Pizza&maxPrice=15.00"
+```
+
+#### Example: Global Search for "Taco"
+```bash
+curl -X GET "http://localhost:8090/api/search/all?keyword=Taco"
+```
+

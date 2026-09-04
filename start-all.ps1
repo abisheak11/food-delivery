@@ -26,13 +26,17 @@ Write-Host "[4/6] Starting Delivery Service on port 8084..." -ForegroundColor Gr
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\delivery-service'; Write-Host '--- DELIVERY SERVICE (8084) ---' -ForegroundColor Yellow; mvn spring-boot:run"
 
 # Start Payment Service (8085)
-Write-Host "[5/6] Starting Payment Service on port 8085..." -ForegroundColor Green
+Write-Host "[5/7] Starting Payment Service on port 8085..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\payment-service'; Write-Host '--- PAYMENT SERVICE (8085) ---' -ForegroundColor Yellow; mvn spring-boot:run"
 
+# Start Search Service (8086)
+Write-Host "[6/7] Starting Search Service on port 8086..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\search-service'; Write-Host '--- SEARCH SERVICE (8086) ---' -ForegroundColor Yellow; mvn spring-boot:run"
+
 # Start API Gateway (8090)
-Write-Host "[6/6] Starting API Gateway & Swagger Hub on port 8090..." -ForegroundColor Green
+Write-Host "[7/7] Starting API Gateway & Swagger Hub on port 8090..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\services\api-gateway'; Write-Host '--- API GATEWAY (8090) ---' -ForegroundColor Yellow; mvn spring-boot:run"
 
-Write-Host "`nAll 6 services are launching in parallel!" -ForegroundColor Cyan
+Write-Host "`nAll 7 services are launching in parallel!" -ForegroundColor Cyan
 Write-Host "Unified Swagger UI: http://localhost:8090/swagger-ui.html" -ForegroundColor Yellow
 Write-Host "To stop all running services at once, run: .\stop-all.ps1`n" -ForegroundColor DarkGray

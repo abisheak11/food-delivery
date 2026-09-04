@@ -28,7 +28,7 @@ public class RestaurantDecisionConsumer {
         logger.info("Received message from Kafka topic 'restaurant-order-decision': {}", message);
         try {
             String payload;
-            if (message instanceof org.apache.kafka.clients.consumer.ConsumerRecord<?, ?> record) {
+            if (message instanceof ConsumerRecord<?, ?> record) {
                 payload = String.valueOf(record.value());
             } else if (message instanceof String str) {
                 payload = str;
