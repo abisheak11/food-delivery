@@ -200,6 +200,7 @@ curl -X POST http://localhost:8090/api/payments/refund \
 | `GET` | `/api/deliveries/available` | View available delivery tasks | Yes (`ROLE_DELIVERY`) |
 | `POST` | `/api/deliveries/{id}/accept` | Accept delivery task | Yes (`ROLE_DELIVERY`) |
 | `PUT` | `/api/deliveries/{id}/status` | Update delivery status (`PICKED_UP`, `DELIVERED`) | Yes (`ROLE_DELIVERY`) |
+| `GET` | `/api/deliveries/serviceability?latitude={lat}&longitude={lng}` | **Check delivery availability for address/GPS** | No |
 | `GET` | `/api/deliveries/order/{orderId}` | Track delivery status for order | Yes (Bearer Token) |
 | `GET` | `/api/deliveries/health` | Health status | No |
 
