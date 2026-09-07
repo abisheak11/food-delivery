@@ -186,4 +186,31 @@ class DeliveryControllerTest {
                 .andExpect(jsonPath("$.deliveryStatus", is("DELIVERED")))
                 .andExpect(jsonPath("$.partnerName", is("Dave Driver")));
     }
+
+    @Test
+    void testServiceability_InsideCoverageZone_ShouldReturnServiceable() throws Exception {
+        // Taramani Chennai Coordinates (close to central hub at 12.9863, 80.2432)
+        mockMvc.perform(get("/api/deliveries/serviceability")
+                        .param("latitude", "12.9865")
+                        .param("longitude", "80.2430")
+                        .param("address", "Ramanujan IT City, Taramani, Chennai, Tamil Nadu 600113"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isServiceable", is(true)))
+                .andExpect(jsonPath("$.availableDeliveryPartners", greaterThanOrEqualTo(0)))
+                .andExpect(jsonPath("$.estimatedDeliveryMinutes", notNullValue()))
+                .andExpect(jsonPath("$.message", containsString("Delivery service is available")));
+    }
+
+    @Test
+    void testServiceability_OutsideCoverageZone_ShouldReturnNotServiceable() throws Exception {
+        // Remote Coordinates (Yelagiri Hills / Kanchipuram > 50km away from Taramani hub)
+        mockMvc.perform(get("/api/deliveries/serviceability")
+                        .param("latitude", "12.5786")
+                        .param("longitude", "78.6399")
+                        .param("address", "Yelagiri Hills, Tamil Nadu"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isServiceable", is(false)))
+                .andExpect(jsonPath("$.nearestPartnerDistanceKm", greaterThan(15.0)))
+                .andExpect(jsonPath("$.message", containsString("not currently available")));
+    }
 }

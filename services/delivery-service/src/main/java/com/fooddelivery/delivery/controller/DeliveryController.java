@@ -4,6 +4,7 @@ import com.fooddelivery.delivery.dto.*;
 import com.fooddelivery.delivery.model.DeliveryStatus;
 import com.fooddelivery.delivery.security.UserPrincipal;
 import com.fooddelivery.delivery.service.DeliveryTaskService;
+import com.fooddelivery.delivery.service.ServiceabilityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,11 +25,23 @@ import java.util.Map;
 public class DeliveryController {
 
     private final DeliveryTaskService taskService;
+    private final ServiceabilityService serviceabilityService;
 
     @GetMapping("/health")
     @Operation(summary = "Health check endpoint")
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of("status", "UP", "service", "delivery-service"));
+    }
+
+    @GetMapping("/serviceability")
+    @Operation(summary = "Check if delivery service is available at given coordinates/address")
+    public ResponseEntity<ServiceabilityResponse> checkServiceability(
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
+            @RequestParam(required = false) String address
+    ) {
+        ServiceabilityResponse response = serviceabilityService.checkServiceability(latitude, longitude, address);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/tasks")
