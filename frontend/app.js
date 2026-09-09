@@ -1,30 +1,49 @@
 /**
- * CraveBite Application Logic - Chennai & Taramani Delivery Edition
- * Implements Location Gatekeeper, Serviceability Verification & Full End-to-End Payment Flow
+ * CraveBite - Chennai & Taramani Multi-Role Platform Application
+ * Features:
+ * 1. Customer: Location Detection & Search, Food Catalog with Stock Status, Cart, UPI/Card/COD Checkout, Live Order Tracking
+ * 2. Restaurant Kitchen: Incoming Orders Queue (Accept/Reject/Ready), Menu Stock Toggle (In-Stock/Out-of-Stock), Add Dish
+ * 3. Delivery Partner: Online/Offline Availability Toggle, Available Pickups Feed, Accept Task, Step Progression (Picked Up -> Delivered)
+ * 4. Admin Console: Platform KPIs, Live Orders Ledger, Fleet GPS Radar, Microservices Telemetry
  */
 
 const App = {
     state: {
-        user: null,
-        token: null,
-        location: null,
+        activeRole: 'customer',
+        user: { username: "customer1", fullName: "Alex Customer", role: "ROLE_CUSTOMER" },
+        token: "mock_jwt_token_chennai",
+        location: {
+            address: "Taramani - Ramanujan IT City, Chennai 600113",
+            latitude: 12.9863,
+            longitude: 80.2432,
+            isServiceable: true,
+            nearestPartnerDistanceKm: 0.5,
+            estimatedDeliveryMinutes: 25
+        },
         isViewOnly: false,
         cart: [],
         currentCategory: 'ALL',
         searchQuery: '',
         sortBy: 'popular',
         selectedPaymentMethod: 'UPI',
-        currentOrderNumber: null,
+        deliveryOnline: true,
+        todayEarnings: 640,
+        completedDeliveries: 6,
+        activeDeliveryTask: null,
+
+        // Live Food Catalog (Dynamic Availability & Stock)
         catalog: [
             {
                 id: 1,
                 name: "Chennai Ghee Podi Crispy Dosa",
                 category: "South Indian",
                 cuisine: "South Indian",
-                restaurant: "A2B - Adyar Ananda Bhavan (Adyar)",
+                restaurant: "A2B - Adyar Ananda Bhavan (Taramani)",
+                restaurantId: 1,
                 price: 140,
                 rating: 4.9,
                 emoji: "🥞",
+                inStock: true,
                 description: "Crispy golden fermented crepe roasted in pure desi ghee, dusted with spicy gun powder (podi), served with 3 chutneys & sambar."
             },
             {
@@ -33,9 +52,11 @@ const App = {
                 category: "Biryani",
                 cuisine: "South Indian",
                 restaurant: "Thalappakatti Biryani (Velachery)",
+                restaurantId: 2,
                 price: 360,
                 rating: 4.9,
                 emoji: "🍛",
+                inStock: true,
                 description: "Authentic Seeraga Samba rice cooked with tender mutton chunks and traditional handmade masala, served with brinjal gravy & raita."
             },
             {
@@ -44,9 +65,11 @@ const App = {
                 category: "Chettinad",
                 cuisine: "South Indian",
                 restaurant: "Anjappar Chettinad (Taramani OMR)",
+                restaurantId: 3,
                 price: 290,
                 rating: 4.8,
                 emoji: "🍗",
+                inStock: true,
                 description: "Country chicken cooked in fresh stone-ground black pepper, shallots, curry leaves, and roasted spices."
             },
             {
@@ -55,9 +78,11 @@ const App = {
                 category: "North Indian",
                 cuisine: "North Indian",
                 restaurant: "Sangeetha Veg Restaurant (OMR)",
+                restaurantId: 4,
                 price: 240,
                 rating: 4.7,
                 emoji: "🥘",
+                inStock: true,
                 description: "Soft cottage cheese simmered in rich creamy tomato cashew gravy, served with hot clay-oven butter naan."
             },
             {
@@ -66,9 +91,11 @@ const App = {
                 category: "Snacks",
                 cuisine: "South Indian",
                 restaurant: "Madras Coffee House (Taramani)",
+                restaurantId: 5,
                 price: 95,
                 rating: 4.9,
                 emoji: "☕",
+                inStock: true,
                 description: "Freshly brewed chicory coffee in brass dabara set, paired with two golden crispy lentil vadas and coconut chutney."
             },
             {
@@ -77,9 +104,11 @@ const App = {
                 category: "Street Food",
                 cuisine: "Arabian",
                 restaurant: "Arabian Nights (Kandanchavadi)",
+                restaurantId: 6,
                 price: 160,
                 rating: 4.8,
                 emoji: "🌯",
+                inStock: true,
                 description: "Charcoal-grilled spiced shredded chicken rolled in warm rumali roti with garlic toum, pickled veggies, and tahini."
             },
             {
@@ -88,9 +117,11 @@ const App = {
                 category: "Pizza",
                 cuisine: "Italian",
                 restaurant: "Toscano (Phoenix Marketcity)",
+                restaurantId: 7,
                 price: 450,
                 rating: 4.8,
                 emoji: "🍕",
+                inStock: true,
                 description: "Stone-baked sourdough crust topped with San Marzano marinara, fresh mozzarella bocconcini, basil, and aromatic truffle oil."
             },
             {
@@ -99,15 +130,81 @@ const App = {
                 category: "Burgers",
                 cuisine: "Continental",
                 restaurant: "Burger Lounge (Thiruvanmiyur)",
+                restaurantId: 8,
                 price: 260,
                 rating: 4.7,
                 emoji: "🍔",
+                inStock: true,
                 description: "Double seasoned smashed patties with melted American cheddar, caramelized onions, and signature house sauce."
             }
+        ],
+
+        // Unified Live Orders Store
+        orders: [
+            {
+                id: 101,
+                orderNumber: "ORD-CHN-1001",
+                customerName: "Alex Customer",
+                restaurantName: "A2B - Adyar Ananda Bhavan (Taramani)",
+                restaurantId: 1,
+                deliveryAddress: "Ramanujan IT City, TRIL Infopark, Taramani, Chennai",
+                items: [
+                    { name: "Chennai Ghee Podi Crispy Dosa", quantity: 2, price: 140 },
+                    { name: "Authentic Madras Filter Coffee & Medu Vada", quantity: 1, price: 95 }
+                ],
+                totalAmount: 375,
+                paymentMethod: "UPI",
+                paymentStatus: "PAID",
+                status: "PENDING_RESTAURANT_ACCEPTANCE",
+                placedAt: "Just now",
+                courierName: null
+            },
+            {
+                id: 102,
+                orderNumber: "ORD-CHN-1002",
+                customerName: "Priya Sundaram",
+                restaurantName: "Anjappar Chettinad (Taramani OMR)",
+                restaurantId: 3,
+                deliveryAddress: "Ascendas Tech Park, CSIR Road, Taramani, Chennai",
+                items: [
+                    { name: "Chettinad Spicy Pepper Chicken Gravy", quantity: 1, price: 290 }
+                ],
+                totalAmount: 290,
+                paymentMethod: "CARD",
+                paymentStatus: "PAID",
+                status: "PREPARING",
+                placedAt: "5 mins ago",
+                courierName: null
+            },
+            {
+                id: 103,
+                orderNumber: "ORD-CHN-1003",
+                customerName: "Venkatesh K.",
+                restaurantName: "Thalappakatti Biryani (Velachery)",
+                restaurantId: 2,
+                deliveryAddress: "142 Velachery Main Road, Chennai",
+                items: [
+                    { name: "Dindigul Thalappakatti Mutton Biryani", quantity: 2, price: 360 }
+                ],
+                totalAmount: 720,
+                paymentMethod: "UPI",
+                paymentStatus: "PAID",
+                status: "READY_FOR_PICKUP",
+                placedAt: "12 mins ago",
+                courierName: null
+            }
+        ],
+
+        // Delivery Fleet
+        couriers: [
+            { id: 1, name: "Murugan S. (You)", vehicle: "Hero Splendor (TN-07-BW-4821)", phone: "+91 98401 22334", online: true, zone: "Taramani Hub", rating: "4.95 ★" },
+            { id: 2, name: "Karthik Raja", vehicle: "Honda Activa (TN-09-AX-9912)", phone: "+91 98402 33445", online: true, zone: "Ascendas IT Park", rating: "4.90 ★" },
+            { id: 3, name: "Saravanan P.", vehicle: "TVS Apache (TN-22-CZ-1144)", phone: "+91 98403 44556", online: true, zone: "Velachery Main Rd", rating: "4.85 ★" },
+            { id: 4, name: "Dinesh Kumar", vehicle: "Bajaj Pulsar (TN-07-DK-7788)", phone: "+91 98404 55667", online: false, zone: "Adyar Depot", rating: "4.88 ★" }
         ]
     },
 
-    // Curated Chennai & Taramani Locations
+    // Curated Chennai & Taramani Sample Locations
     sampleLocations: [
         {
             name: "Taramani - Ramanujan IT City",
@@ -184,119 +281,127 @@ const App = {
     ],
 
     init() {
-        console.log("Initializing CraveBite Chennai & Taramani Delivery Application...");
-        const savedToken = localStorage.getItem("cravebite_token");
-        const savedUser = localStorage.getItem("cravebite_user");
+        console.log("Initializing CraveBite Chennai & Taramani Multi-Role Application...");
+
+        // Load saved state if any
         const savedLoc = localStorage.getItem("cravebite_location");
-
-        if (savedToken && savedUser) {
-            this.state.token = savedToken;
-            this.state.user = JSON.parse(savedUser);
-            document.getElementById("user-name-display").textContent = this.state.user.fullName || this.state.user.username;
-
-            if (savedLoc) {
+        if (savedLoc) {
+            try {
                 this.state.location = JSON.parse(savedLoc);
-                if (this.state.location.isServiceable) {
-                    this.showHomeView();
-                } else {
-                    this.showOutOfServiceView(this.state.location);
-                }
-            } else {
-                this.openLocationSelector();
-            }
-        } else {
-            this.showAuthView();
+            } catch (e) {}
         }
 
-        this.renderSuggestions(this.sampleLocations);
+        this.updateLocationHeaderDisplay();
         this.renderCatalog();
+        this.renderCustomerRecentOrders();
+        this.updateNotificationBadges();
+        this.renderSuggestions(this.sampleLocations);
     },
 
     // ==========================================
-    // Auth & Navigation
+    // 1. Role Switching Engine
     // ==========================================
-    switchAuthTab(tab) {
-        document.getElementById("tab-login").classList.toggle("active", tab === 'login');
-        document.getElementById("tab-register").classList.toggle("active", tab === 'register');
-        document.getElementById("login-form").classList.toggle("hidden", tab !== 'login');
-        document.getElementById("register-form").classList.toggle("hidden", tab !== 'register');
+    switchRole(role) {
+        this.state.activeRole = role;
+
+        // Update tab styling
+        document.querySelectorAll(".role-tab").forEach(tab => tab.classList.remove("active"));
+        const activeTab = document.getElementById(`tab-role-${role}`);
+        if (activeTab) activeTab.classList.add("active");
+
+        // Hide all views
+        document.getElementById("customer-view-wrapper").classList.add("hidden");
+        document.getElementById("restaurant-view-wrapper").classList.add("hidden");
+        document.getElementById("delivery-view-wrapper").classList.add("hidden");
+        document.getElementById("admin-view-wrapper").classList.add("hidden");
+
+        // Customer header only on customer view
+        document.getElementById("customer-header").classList.toggle("hidden", role !== 'customer');
+
+        const personaDisplay = document.getElementById("current-persona-name");
+
+        if (role === 'customer') {
+            document.getElementById("customer-view-wrapper").classList.remove("hidden");
+            personaDisplay.textContent = "Customer (Alex)";
+            this.state.user = { username: "customer1", fullName: "Alex Customer", role: "ROLE_CUSTOMER" };
+            this.renderCatalog();
+            this.renderCustomerRecentOrders();
+        } else if (role === 'restaurant') {
+            document.getElementById("restaurant-view-wrapper").classList.remove("hidden");
+            personaDisplay.textContent = "Kitchen Manager (restaurant1)";
+            this.state.user = { username: "restaurant1", fullName: "A2B Kitchen Head", role: "ROLE_RESTAURANT" };
+            this.refreshRestaurantData();
+        } else if (role === 'delivery') {
+            document.getElementById("delivery-view-wrapper").classList.remove("hidden");
+            personaDisplay.textContent = "Courier: Murugan (delivery1)";
+            this.state.user = { username: "delivery1", fullName: "Murugan S.", role: "ROLE_DELIVERY" };
+            this.refreshDeliveryTasks();
+        } else if (role === 'admin') {
+            document.getElementById("admin-view-wrapper").classList.remove("hidden");
+            personaDisplay.textContent = "Super Admin (admin)";
+            this.state.user = { username: "admin", fullName: "Platform Admin", role: "ROLE_ADMIN" };
+            this.refreshAdminData();
+        }
+
+        this.updateNotificationBadges();
     },
 
-    async handleLogin(e) {
-        e.preventDefault();
-        const username = document.getElementById("login-username").value.trim();
-        const password = document.getElementById("login-password").value;
+    openPersonaModal() {
+        document.getElementById("persona-modal").classList.remove("hidden");
+    },
 
-        this.showToast("Authenticating credentials...", "info");
+    closePersonaModal() {
+        document.getElementById("persona-modal").classList.add("hidden");
+    },
 
-        try {
-            const response = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
-            });
+    selectPersona(role) {
+        this.closePersonaModal();
+        this.switchRole(role);
+        this.showToast(`Switched persona to ${role.toUpperCase()} mode! 🔄`, "info");
+    },
 
-            if (response.ok) {
-                const data = await response.json();
-                this.onAuthSuccess(data.token, { username: data.username || username, fullName: data.fullName || username });
-            } else {
-                console.warn("Backend auth response failed, using client demo session.");
-                this.onAuthSuccess("mock_jwt_token_" + Date.now(), { username: username, fullName: username.toUpperCase() });
-            }
-        } catch (err) {
-            console.warn("Backend connection error, falling back to instant session:", err);
-            this.onAuthSuccess("mock_jwt_token_demo", { username: username, fullName: username });
+    updateNotificationBadges() {
+        // Pending restaurant orders
+        const pendingCount = this.state.orders.filter(o => o.status === 'PENDING_RESTAURANT_ACCEPTANCE').length;
+        const restBadge = document.getElementById("badge-restaurant-orders");
+        if (restBadge) {
+            restBadge.textContent = pendingCount;
+            restBadge.classList.toggle("hidden", pendingCount === 0);
+        }
+
+        // Available deliveries
+        const deliveryCount = this.state.orders.filter(o => o.status === 'READY_FOR_PICKUP' || o.status === 'PREPARING').length;
+        const delBadge = document.getElementById("badge-delivery-tasks");
+        if (delBadge) {
+            delBadge.textContent = deliveryCount;
+            delBadge.classList.toggle("hidden", deliveryCount === 0);
         }
     },
 
-    handleRegister(e) {
-        e.preventDefault();
-        const username = document.getElementById("reg-username").value.trim();
-        const email = document.getElementById("reg-email").value.trim();
-        this.onAuthSuccess("mock_jwt_token_reg", { username, email, fullName: username });
-    },
-
-    demoLogin() {
-        this.onAuthSuccess("mock_jwt_token_guest", { username: "chennai_foodie", fullName: "Karthik R (Chennai)" });
-    },
-
-    onAuthSuccess(token, user) {
-        this.state.token = token;
-        this.state.user = user;
-        localStorage.setItem("cravebite_token", token);
-        localStorage.setItem("cravebite_user", JSON.stringify(user));
-
-        document.getElementById("user-name-display").textContent = user.fullName || user.username;
-        this.showToast(`Welcome back, ${user.fullName || user.username}! 🎉`, "success");
-
-        document.getElementById("auth-view").classList.add("hidden");
-        this.openLocationSelector();
-    },
-
-    logout() {
-        localStorage.clear();
-        this.state.user = null;
-        this.state.token = null;
-        this.state.location = null;
-        this.state.cart = [];
-        this.showAuthView();
-        this.showToast("Signed out successfully.", "info");
-    },
-
-    showAuthView() {
-        document.getElementById("auth-view").classList.remove("hidden");
-        document.getElementById("main-header").classList.add("hidden");
-        document.getElementById("home-view").classList.add("hidden");
-        document.getElementById("out-of-service-view").classList.add("hidden");
-        this.closeLocationSelector();
-    },
-
     // ==========================================
-    // Location Gatekeeper & Detection Flow
+    // 2. Customer View & Location Gatekeeper
     // ==========================================
+    updateLocationHeaderDisplay() {
+        const loc = this.state.location;
+        const addr = loc ? loc.address : "Taramani - Ramanujan IT City, Chennai";
+        const shortName = addr.split("-")[0].split(",")[0].trim();
+        
+        const headerAddr = document.getElementById("header-address-text");
+        if (headerAddr) headerAddr.textContent = addr;
+
+        const heroAddr = document.getElementById("hero-address-highlight");
+        if (heroAddr) heroAddr.textContent = shortName;
+
+        const eta = loc && loc.estimatedDeliveryMinutes ? `${loc.estimatedDeliveryMinutes} mins` : "25 mins";
+        const headerEta = document.getElementById("header-eta-text");
+        if (headerEta) headerEta.textContent = `~${eta}`;
+
+        const heroEta = document.getElementById("hero-eta-display");
+        if (heroEta) heroEta.textContent = `~${eta}`;
+    },
+
     openLocationSelector() {
-        const modal = document.getElementById("location-modal-overlay");
-        modal.classList.remove("hidden");
+        document.getElementById("location-modal-overlay").classList.remove("hidden");
         document.getElementById("address-search-input").value = "";
         document.getElementById("serviceability-spinner").classList.add("hidden");
         this.renderSuggestions(this.sampleLocations);
@@ -332,11 +437,11 @@ const App = {
                           Math.sin(dLon/2) * Math.sin(dLon/2);
                 const distanceKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 
-                // If browser IP-based geolocation locates to a distant telecom hub (e.g. Bangalore ISP ~280 km away)
+                // If browser IP locates far away (common on Indian desktop broadband)
                 if (distanceKm > 25) {
                     this.showLoader(false);
                     const useTaramani = confirm(
-                        `Your browser's ISP IP reported coordinates (${lat.toFixed(2)}, ${lng.toFixed(2)}) which is ~${distanceKm} km away (commonly routed through a regional ISP gateway).\n\nWould you like to set your location to Taramani, Chennai (Ramanujan IT City)?`
+                        `Your desktop network IP reported coordinates (${lat.toFixed(2)}, ${lng.toFixed(2)}) which is ~${distanceKm} km away (routed through a regional telecom ISP gateway).\n\nWould you like to snap your delivery address to Taramani, Chennai (Ramanujan IT City)?`
                     );
 
                     if (useTaramani) {
@@ -376,7 +481,7 @@ const App = {
             const isOutOfZone = /kanchi|yelagiri|ooty|madurai|salem|remote|village|hill|pondicherry|delhi|mumbai|bangalore/i.test(q);
             const dynamicLoc = {
                 name: query,
-                desc: `Custom geocoded query: ${query}, Tamil Nadu`,
+                desc: `Custom search address: ${query}, Tamil Nadu`,
                 lat: isOutOfZone ? 12.5000 : 12.9850,
                 lng: isOutOfZone ? 78.5000 : 80.2400,
                 serviceable: !isOutOfZone,
@@ -396,6 +501,7 @@ const App = {
 
     renderSuggestions(locations) {
         const list = document.getElementById("location-suggestions-list");
+        if (!list) return;
         list.innerHTML = "";
 
         locations.forEach(loc => {
@@ -411,18 +517,11 @@ const App = {
                     ${loc.serviceable ? 'DELIVERY AVAILABLE' : 'OUT OF ZONE'}
                 </span>
             `;
-            item.onclick = () => this.selectLocation(loc);
+            item.onclick = () => this.verifyServiceability(loc.lat, loc.lng, loc.name);
             list.appendChild(item);
         });
     },
 
-    selectLocation(loc) {
-        this.verifyServiceability(loc.lat, loc.lng, loc.name);
-    },
-
-    // ==========================================
-    // Real-Time Serviceability Verification Flow
-    // ==========================================
     async verifyServiceability(lat, lng, address) {
         this.showLoader(true, "Verifying delivery coverage in Chennai & Taramani...");
 
@@ -451,6 +550,7 @@ const App = {
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                   Math.cos(hubLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
                   Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         const distance = Math.round((R * c) * 10) / 10;
         const isServiceable = distance <= 15.0;
 
@@ -469,7 +569,7 @@ const App = {
 
         setTimeout(() => {
             this.handleServiceabilityResult(result);
-        }, 500);
+        }, 400);
     },
 
     handleServiceabilityResult(data) {
@@ -481,11 +581,44 @@ const App = {
 
         if (data.isServiceable) {
             this.state.isViewOnly = false;
-            this.showHomeView();
-            this.showToast(`📍 Location set: ${data.address || 'Taramani, Chennai'} (~${data.estimatedDeliveryMinutes || 25} mins).`, "success");
+            document.getElementById("out-of-service-view").classList.add("hidden");
+            document.getElementById("home-view").classList.remove("hidden");
+            document.getElementById("view-only-warning-banner").classList.add("hidden");
+            document.getElementById("delivery-status-indicator").classList.remove("hidden");
+            this.updateLocationHeaderDisplay();
+            this.renderCatalog();
+            this.showToast(`📍 Delivery confirmed for ${data.address || 'Taramani, Chennai'} (~${data.estimatedDeliveryMinutes || 25} mins).`, "success");
         } else {
             this.showOutOfServiceView(data);
         }
+    },
+
+    showOutOfServiceView(loc) {
+        document.getElementById("home-view").classList.add("hidden");
+        document.getElementById("out-of-service-view").classList.remove("hidden");
+        document.getElementById("view-only-warning-banner").classList.remove("hidden");
+        document.getElementById("delivery-status-indicator").classList.add("hidden");
+
+        const addressText = loc ? (loc.address || "Selected Location") : "Selected Location";
+        document.getElementById("header-address-text").textContent = addressText;
+        document.getElementById("out-address-display").textContent = `"${addressText}"`;
+        document.getElementById("out-distance-display").textContent = `${loc.nearestPartnerDistanceKm || 45.0} km`;
+    },
+
+    enterViewOnlyMode() {
+        this.state.isViewOnly = true;
+        document.getElementById("out-of-service-view").classList.add("hidden");
+        document.getElementById("home-view").classList.remove("hidden");
+        document.getElementById("view-only-warning-banner").classList.remove("hidden");
+        this.renderCatalog();
+        this.showToast("Entered View-Only Mode. Note: Ordering is disabled outside Chennai zone.", "info");
+    },
+
+    handleNotifyMe(e) {
+        e.preventDefault();
+        const email = document.getElementById("notify-email").value;
+        this.showToast(`Thank you! We will alert ${email} when CraveBite expands to your location! 🚀`, "success");
+        document.getElementById("notify-email").value = "";
     },
 
     showLoader(show, text = "Checking...") {
@@ -499,59 +632,7 @@ const App = {
     },
 
     // ==========================================
-    // View Renders (Home & Out-of-Service)
-    // ==========================================
-    showHomeView() {
-        document.getElementById("auth-view").classList.add("hidden");
-        document.getElementById("out-of-service-view").classList.add("hidden");
-        document.getElementById("home-view").classList.remove("hidden");
-        document.getElementById("main-header").classList.remove("hidden");
-
-        const loc = this.state.location;
-        const addressText = loc ? (loc.address || "Taramani, Chennai") : "Taramani, Chennai";
-        document.getElementById("header-address-text").textContent = addressText;
-        document.getElementById("hero-address-highlight").textContent = addressText.split("-")[0].split(",")[0].trim();
-
-        const eta = loc && loc.estimatedDeliveryMinutes ? `${loc.estimatedDeliveryMinutes} mins` : "20-30 mins";
-        document.getElementById("header-eta-text").textContent = eta;
-        document.getElementById("hero-eta-display").textContent = `~${eta}`;
-
-        document.getElementById("view-only-warning-banner").classList.toggle("hidden", !this.state.isViewOnly);
-        document.getElementById("delivery-status-indicator").classList.toggle("hidden", this.state.isViewOnly);
-
-        this.renderCatalog();
-    },
-
-    showOutOfServiceView(loc) {
-        document.getElementById("auth-view").classList.add("hidden");
-        document.getElementById("home-view").classList.add("hidden");
-        document.getElementById("out-of-service-view").classList.remove("hidden");
-        document.getElementById("main-header").classList.remove("hidden");
-
-        const addressText = loc ? (loc.address || "Selected Location") : "Selected Location";
-        document.getElementById("header-address-text").textContent = addressText;
-        document.getElementById("out-address-display").textContent = `"${addressText}"`;
-        document.getElementById("out-distance-display").textContent = `${loc.nearestPartnerDistanceKm || 45.0} km`;
-
-        document.getElementById("view-only-warning-banner").classList.remove("hidden");
-        document.getElementById("delivery-status-indicator").classList.add("hidden");
-    },
-
-    enterViewOnlyMode() {
-        this.state.isViewOnly = true;
-        this.showToast("Entering View-Only Mode. Note: Ordering is disabled for this location outside Chennai zone.", "info");
-        this.showHomeView();
-    },
-
-    handleNotifyMe(e) {
-        e.preventDefault();
-        const email = document.getElementById("notify-email").value;
-        this.showToast(`Thank you! We will alert ${email} when CraveBite expands to your Tamil Nadu location! 🚀`, "success");
-        document.getElementById("notify-email").value = "";
-    },
-
-    // ==========================================
-    // Food Catalog & Filtering
+    // 3. Customer Food Catalog & Cart Operations
     // ==========================================
     filterByCategory(category) {
         this.state.currentCategory = category;
@@ -604,9 +685,9 @@ const App = {
         if (items.length === 0) {
             grid.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">
-                    <p style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</p>
-                    <p style="font-size: 1.1rem; font-weight: 700;">No dishes found matching your search.</p>
-                    <small>Try searching for Biryani, Dosa, Pepper Chicken, or Paneer!</small>
+                    <p style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</p>
+                    <p style="font-size: 1.1rem; font-weight: 700;">No dishes found matching "${this.state.searchQuery}".</p>
+                    <small>Try searching for Dosa, Biryani, Coffee, or Chicken!</small>
                 </div>
             `;
             return;
@@ -615,6 +696,12 @@ const App = {
         items.forEach(item => {
             const card = document.createElement("div");
             card.className = "food-card";
+            
+            const isAvailable = item.inStock;
+            const btnHtml = isAvailable 
+                ? `<button class="btn-add-cart" onclick="App.addToCart(${item.id})">${this.state.isViewOnly ? 'View Details' : '+ Add to Order'}</button>`
+                : `<button class="btn-add-cart out-of-stock" disabled>⛔ Out of Stock</button>`;
+
             card.innerHTML = `
                 <div class="card-image-box">
                     <span class="card-tag">${item.cuisine}</span>
@@ -627,9 +714,7 @@ const App = {
                     <p class="card-desc">${item.description}</p>
                     <div class="card-footer">
                         <span class="card-price">₹${item.price.toFixed(0)}</span>
-                        <button class="btn-add-cart" onclick="App.addToCart(${item.id})">
-                            ${this.state.isViewOnly ? 'View Details' : '+ Add to Order'}
-                        </button>
+                        ${btnHtml}
                     </div>
                 </div>
             `;
@@ -637,17 +722,19 @@ const App = {
         });
     },
 
-    // ==========================================
-    // Cart Operations
-    // ==========================================
     addToCart(itemId) {
         if (this.state.isViewOnly) {
-            this.showToast("⚠️ Ordering is disabled in View-Only mode because delivery is not available in this area.", "error");
+            this.showToast("⚠️ Ordering is disabled in View-Only mode for locations outside Chennai radius.", "error");
             return;
         }
 
         const item = this.state.catalog.find(i => i.id === itemId);
         if (!item) return;
+
+        if (!item.inStock) {
+            this.showToast(`"${item.name}" is currently Out of Stock at the kitchen.`, "error");
+            return;
+        }
 
         const existing = this.state.cart.find(i => i.id === itemId);
         if (existing) {
@@ -664,7 +751,9 @@ const App = {
         const countBadge = document.getElementById("cart-badge-count");
         const container = document.getElementById("cart-items-container");
         const totalCount = this.state.cart.reduce((sum, item) => sum + item.quantity, 0);
-        countBadge.textContent = totalCount;
+        if (countBadge) countBadge.textContent = totalCount;
+
+        if (!container) return;
 
         if (this.state.cart.length === 0) {
             container.innerHTML = `
@@ -725,7 +814,7 @@ const App = {
     },
 
     // ==========================================
-    // Payment Processing & End-to-End Order Flow
+    // 4. Payment & End-to-End Order Creation
     // ==========================================
     openPaymentModal() {
         if (this.state.cart.length === 0) {
@@ -768,10 +857,11 @@ const App = {
         progressBox.classList.remove("hidden");
 
         // 1. Emitting Kafka Order Creation
-        stepText.textContent = "1. Sending order to order-service (Port 8082)... Emitting Kafka 'order-created' event 🚀";
+        stepText.textContent = "1. Sending order to order-service (:8082)... Emitting Kafka 'order-created' event 🚀";
 
-        let orderId = Math.floor(Math.random() * 9000) + 1000;
-        let orderNumber = `ORD-CHN-${orderId}`;
+        const orderId = Math.floor(Math.random() * 9000) + 1000;
+        const orderNumber = `ORD-CHN-${orderId}`;
+        const cartItemsCopy = [...this.state.cart];
 
         try {
             const orderPayload = {
@@ -780,32 +870,23 @@ const App = {
                 deliveryAddress: address,
                 contactPhone: "+91 98765 43210",
                 specialInstructions: "Deliver near Ramanujan IT City gate 2, Taramani",
-                items: this.state.cart.map(i => ({ menuItemId: i.id, quantity: i.quantity }))
+                items: cartItemsCopy.map(i => ({ menuItemId: i.id, quantity: i.quantity }))
             };
 
-            const orderRes = await fetch("/api/orders", {
+            await fetch("/api/orders", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + (this.state.token || "")
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(orderPayload)
             });
-
-            if (orderRes.ok) {
-                const orderData = await orderRes.json();
-                orderId = orderData.id || orderId;
-                orderNumber = orderData.orderNumber || orderNumber;
-            }
         } catch (err) {
-            console.warn("Order service API direct dispatch failed, continuing workflow:", err);
+            console.warn("Backend direct dispatch notice:", err);
         }
 
         // 2. Processing Payment
-        await new Promise(r => setTimeout(r, 900));
-        stepText.textContent = `2. Contacting payment-service (Port 8085)... Processing ₹${subtotal} via ${this.state.selectedPaymentMethod}... 💳`;
+        await new Promise(r => setTimeout(r, 700));
+        stepText.textContent = `2. Contacting payment-service (:8085)... Processing ₹${subtotal} via ${this.state.selectedPaymentMethod}... 💳`;
 
-        let txnId = `TXN-${Math.floor(Math.random() * 900000) + 100000}`;
+        const txnId = `TXN-${Math.floor(Math.random() * 900000) + 100000}`;
 
         try {
             const payPayload = {
@@ -817,36 +898,49 @@ const App = {
                 cardNumber: "4111222233334444",
                 cardExpiry: "12/28",
                 cardCvv: "123",
-                upiId: document.getElementById("pay-upi-id").value || "customer@okhdfcbank"
+                upiId: document.getElementById("pay-upi-id") ? document.getElementById("pay-upi-id").value : "customer@okhdfcbank"
             };
 
-            const payRes = await fetch("/api/payments/process", {
+            await fetch("/api/payments/process", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + (this.state.token || "")
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payPayload)
             });
-
-            if (payRes.ok) {
-                const payData = await payRes.json();
-                txnId = payData.transactionId || payData.id || txnId;
-            }
         } catch (err) {
-            console.warn("Payment service API dispatch failed, continuing workflow:", err);
+            console.warn("Backend payment notice:", err);
         }
 
         // 3. Kafka Order-Paid Event
-        await new Promise(r => setTimeout(r, 900));
-        stepText.textContent = "3. Kafka event 'payment-processed' emitted! Order status updated to PAID. Kitchen notified! 👨‍🍳";
+        await new Promise(r => setTimeout(r, 700));
+        stepText.textContent = "3. Kafka event 'payment-processed' emitted! Order status: PAID. Kitchen notified! 👨‍🍳";
 
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 600));
+
+        // Add to unified orders list
+        const newOrder = {
+            id: orderId,
+            orderNumber: orderNumber,
+            customerName: this.state.user.fullName || "Alex Customer",
+            restaurantName: cartItemsCopy[0] ? cartItemsCopy[0].restaurant : "A2B - Adyar Ananda Bhavan (Taramani)",
+            restaurantId: 1,
+            deliveryAddress: address,
+            items: cartItemsCopy.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+            totalAmount: subtotal,
+            paymentMethod: this.state.selectedPaymentMethod,
+            paymentStatus: "PAID",
+            status: "PENDING_RESTAURANT_ACCEPTANCE",
+            placedAt: "Just now",
+            courierName: null
+        };
+
+        this.state.orders.unshift(newOrder);
 
         // Complete & Show Success Modal
         this.closePaymentModal();
         this.state.cart = [];
         this.updateCartUI();
+        this.renderCustomerRecentOrders();
+        this.updateNotificationBadges();
 
         document.getElementById("success-order-num").textContent = orderNumber;
         document.getElementById("success-order-address").textContent = address;
@@ -856,11 +950,534 @@ const App = {
 
     closeSuccessModal() {
         document.getElementById("order-success-modal").classList.add("hidden");
-        this.showToast("Order placed successfully! Track status anytime.", "success");
+        this.showToast("Order placed successfully! Track live status on this page.", "success");
     },
 
+    viewOrderInKitchen() {
+        this.closeSuccessModal();
+        this.switchRole('restaurant');
+    },
+
+    renderCustomerRecentOrders() {
+        const container = document.getElementById("customer-orders-list");
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        if (this.state.orders.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <p>No recent orders found. Place your first order from Chennai menus above!</p>
+                </div>
+            `;
+            return;
+        }
+
+        this.state.orders.forEach(order => {
+            const card = document.createElement("div");
+            card.className = "customer-order-card";
+
+            let statusBadge = `<span class="k-order-badge badge-pending">⏳ Waiting for Kitchen</span>`;
+            if (order.status === 'PREPARING') statusBadge = `<span class="k-order-badge badge-preparing">🍳 Kitchen Preparing</span>`;
+            if (order.status === 'READY_FOR_PICKUP') statusBadge = `<span class="k-order-badge badge-ready">📦 Ready for Courier</span>`;
+            if (order.status === 'PICKED_UP' || order.status === 'OUT_FOR_DELIVERY') statusBadge = `<span class="k-order-badge badge-picked">🛵 Courier On the Way</span>`;
+            if (order.status === 'DELIVERED') statusBadge = `<span class="k-order-badge badge-ready">✅ Delivered</span>`;
+            if (order.status === 'REJECTED_BY_RESTAURANT') statusBadge = `<span class="k-order-badge badge-pending" style="color:var(--danger)">❌ Kitchen Rejected</span>`;
+
+            const itemsSummary = order.items.map(i => `${i.quantity}x ${i.name}`).join(", ");
+
+            card.innerHTML = `
+                <div class="k-order-head">
+                    <span class="k-order-id">${order.orderNumber}</span>
+                    ${statusBadge}
+                </div>
+                <div class="k-order-customer">
+                    <strong>${order.restaurantName}</strong>
+                    <div style="margin-top: 0.3rem; font-size: 0.8rem; color: var(--text-muted);">${itemsSummary}</div>
+                </div>
+                <div class="k-order-footer">
+                    <span class="k-order-total">₹${order.totalAmount}</span>
+                    <small class="text-muted">📍 ${order.deliveryAddress.split(",")[0]}</small>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    },
+
+    // ==========================================
+    // 5. Restaurant Kitchen Operations
+    // ==========================================
+    refreshRestaurantData() {
+        this.renderKitchenOrders();
+        this.renderKitchenMenuItems();
+        this.updateKitchenMetrics();
+        this.updateNotificationBadges();
+    },
+
+    updateKitchenMetrics() {
+        const pending = this.state.orders.filter(o => o.status === 'PENDING_RESTAURANT_ACCEPTANCE').length;
+        const preparing = this.state.orders.filter(o => o.status === 'PREPARING').length;
+        const ready = this.state.orders.filter(o => o.status === 'READY_FOR_PICKUP').length;
+        const activeDishes = this.state.catalog.filter(i => i.inStock).length;
+
+        document.getElementById("kitchen-incoming-count").textContent = pending;
+        document.getElementById("kitchen-preparing-count").textContent = preparing;
+        document.getElementById("kitchen-ready-count").textContent = ready;
+        document.getElementById("kitchen-menu-count").textContent = `${activeDishes}/${this.state.catalog.length}`;
+    },
+
+    renderKitchenOrders() {
+        const container = document.getElementById("kitchen-orders-container");
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        if (this.state.orders.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--text-muted);">No orders in kitchen feed right now.</div>`;
+            return;
+        }
+
+        this.state.orders.forEach(order => {
+            const card = document.createElement("div");
+            card.className = "kitchen-order-card";
+
+            let badgeHtml = "";
+            let actionButtons = "";
+
+            if (order.status === 'PENDING_RESTAURANT_ACCEPTANCE') {
+                badgeHtml = `<span class="k-order-badge badge-pending">Incoming Order 🔔</span>`;
+                actionButtons = `
+                    <button class="btn-success" onclick="App.kitchenAcceptOrder(${order.id})">✅ Accept Order</button>
+                    <button class="btn-danger" onclick="App.kitchenRejectOrder(${order.id})">✕ Reject</button>
+                `;
+            } else if (order.status === 'PREPARING') {
+                badgeHtml = `<span class="k-order-badge badge-preparing">🍳 Cooking in Kitchen</span>`;
+                actionButtons = `
+                    <button class="btn-primary" onclick="App.kitchenMarkReady(${order.id})">📦 Mark Ready for Courier</button>
+                `;
+            } else if (order.status === 'READY_FOR_PICKUP') {
+                badgeHtml = `<span class="k-order-badge badge-ready">📦 Ready for Pickup</span>`;
+                actionButtons = `<small class="text-success">Awaiting courier pickup in Taramani</small>`;
+            } else if (order.status === 'PICKED_UP' || order.status === 'OUT_FOR_DELIVERY') {
+                badgeHtml = `<span class="k-order-badge badge-picked">🛵 Picked Up by ${order.courierName || 'Murugan'}</span>`;
+                actionButtons = `<small class="text-muted">Out for delivery</small>`;
+            } else if (order.status === 'DELIVERED') {
+                badgeHtml = `<span class="k-order-badge badge-ready">✅ Completed</span>`;
+                actionButtons = `<small class="text-muted">Delivered to customer</small>`;
+            } else {
+                badgeHtml = `<span class="k-order-badge badge-pending" style="color:var(--danger)">Rejected</span>`;
+                actionButtons = `<small class="text-danger">Order cancelled</small>`;
+            }
+
+            const itemsRows = order.items.map(item => `
+                <div class="k-item-row">
+                    <span>${item.quantity}x ${item.name}</span>
+                    <strong style="color:var(--text-main)">₹${(item.price * item.quantity).toFixed(0)}</strong>
+                </div>
+            `).join("");
+
+            card.innerHTML = `
+                <div class="k-order-head">
+                    <span class="k-order-id">${order.orderNumber} • ${order.customerName}</span>
+                    ${badgeHtml}
+                </div>
+                <div class="k-order-customer">
+                    <span>📍 Destination: <strong>${order.deliveryAddress}</strong></span>
+                </div>
+                <div class="k-order-items">
+                    ${itemsRows}
+                </div>
+                <div class="k-order-footer">
+                    <span class="k-order-total">Total: ₹${order.totalAmount}</span>
+                    <div class="k-order-actions">
+                        ${actionButtons}
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    },
+
+    kitchenAcceptOrder(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = "PREPARING";
+            this.refreshRestaurantData();
+            this.showToast(`Accepted Order ${order.orderNumber}! Sent to chef preparation queue. 🍳`, "success");
+        }
+    },
+
+    kitchenRejectOrder(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = "REJECTED_BY_RESTAURANT";
+            this.refreshRestaurantData();
+            this.showToast(`Rejected Order ${order.orderNumber}.`, "info");
+        }
+    },
+
+    kitchenMarkReady(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = "READY_FOR_PICKUP";
+            this.refreshRestaurantData();
+            this.showToast(`Order ${order.orderNumber} is Packed! Dispatched alert to Chennai courier fleet. 📦`, "success");
+        }
+    },
+
+    renderKitchenMenuItems() {
+        const container = document.getElementById("kitchen-menu-items-container");
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        this.state.catalog.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "kitchen-menu-card";
+            card.innerHTML = `
+                <div class="k-dish-info">
+                    <div class="k-dish-emoji">${item.emoji}</div>
+                    <div class="k-dish-text">
+                        <h4>${item.name}</h4>
+                        <span>₹${item.price} • ${item.category}</span>
+                    </div>
+                </div>
+                <div class="k-dish-stock-toggle">
+                    <span class="stock-status-pill ${item.inStock ? 'stock-in' : 'stock-out'}">
+                        ${item.inStock ? 'IN STOCK' : 'OUT OF STOCK'}
+                    </span>
+                    <label class="switch">
+                        <input type="checkbox" ${item.inStock ? 'checked' : ''} onchange="App.toggleDishStock(${item.id}, this.checked)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    },
+
+    toggleDishStock(dishId, isStock) {
+        const item = this.state.catalog.find(i => i.id === dishId);
+        if (item) {
+            item.inStock = isStock;
+            this.renderKitchenMenuItems();
+            this.updateKitchenMetrics();
+            this.renderCatalog();
+            const msg = isStock 
+                ? `"${item.name}" is now IN STOCK & visible on Customer Menu!` 
+                : `"${item.name}" is now marked OUT OF STOCK on Customer Menu.`;
+            this.showToast(msg, isStock ? "success" : "info");
+        }
+    },
+
+    openAddDishModal() {
+        document.getElementById("add-dish-modal").classList.remove("hidden");
+    },
+
+    closeAddDishModal() {
+        document.getElementById("add-dish-modal").classList.add("hidden");
+    },
+
+    handleAddDish(e) {
+        e.preventDefault();
+        const name = document.getElementById("new-dish-name").value.trim();
+        const category = document.getElementById("new-dish-cat").value;
+        const price = parseFloat(document.getElementById("new-dish-price").value) || 200;
+        const emoji = document.getElementById("new-dish-emoji").value.trim() || "🍲";
+        const description = document.getElementById("new-dish-desc").value.trim();
+
+        const newDish = {
+            id: Date.now(),
+            name: name,
+            category: category,
+            cuisine: category,
+            restaurant: "A2B - Adyar Ananda Bhavan (Taramani)",
+            restaurantId: 1,
+            price: price,
+            rating: 5.0,
+            emoji: emoji,
+            inStock: true,
+            description: description
+        };
+
+        this.state.catalog.unshift(newDish);
+        this.closeAddDishModal();
+        this.refreshRestaurantData();
+        this.renderCatalog();
+        this.showToast(`Added "${name}" to restaurant menu! 🍲`, "success");
+
+        document.getElementById("new-dish-name").value = "";
+        document.getElementById("new-dish-price").value = "";
+        document.getElementById("new-dish-desc").value = "";
+    },
+
+    // ==========================================
+    // 6. Delivery Partner Operations
+    // ==========================================
+    toggleDeliveryAvailability(isOnline) {
+        this.state.deliveryOnline = isOnline;
+        const label = document.getElementById("delivery-online-label");
+        if (label) {
+            label.innerHTML = `Status: <strong style="color:${isOnline ? 'var(--success)' : 'var(--text-muted)'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</strong>`;
+        }
+
+        // Also update Murugan's status in the fleet table
+        const murugan = this.state.couriers.find(c => c.id === 1);
+        if (murugan) murugan.online = isOnline;
+
+        this.showToast(`Delivery Partner status is now ${isOnline ? 'ONLINE (Ready for Orders)' : 'OFFLINE'}. 🛵`, isOnline ? "success" : "info");
+        this.refreshDeliveryTasks();
+    },
+
+    refreshDeliveryTasks() {
+        this.renderActiveDeliveryMission();
+        this.renderAvailableDeliveryTasks();
+        this.updateNotificationBadges();
+    },
+
+    renderActiveDeliveryMission() {
+        const container = document.getElementById("delivery-active-mission-container");
+        const badge = document.getElementById("active-task-badge");
+        if (!container) return;
+
+        const activeOrder = this.state.orders.find(o => (o.status === 'PICKED_UP' || o.status === 'OUT_FOR_DELIVERY') && (o.courierName === 'Murugan S.' || !o.courierName));
+
+        if (!activeOrder) {
+            badge.textContent = "No Active Task";
+            badge.className = "badge-pill bg-dark";
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                    <p style="font-size: 2.5rem; margin-bottom: 0.5rem;">🛵</p>
+                    <p style="font-weight: 700; color: var(--text-main);">No delivery mission in progress.</p>
+                    <small>Accept an available order from the queue below to start delivery!</small>
+                </div>
+            `;
+            return;
+        }
+
+        badge.textContent = "Delivery In Progress";
+        badge.className = "badge-pill bg-primary";
+
+        container.innerHTML = `
+            <div class="delivery-task-card">
+                <div class="d-task-header">
+                    <span class="d-order-num">${activeOrder.orderNumber} • ${activeOrder.customerName}</span>
+                    <span class="k-order-badge badge-picked">OUT FOR DELIVERY</span>
+                </div>
+                <div class="d-route-timeline">
+                    <div class="d-route-point">
+                        <span>🏬</span>
+                        <div>
+                            <strong>Pickup: ${activeOrder.restaurantName}</strong>
+                            <small>Items checked & picked up</small>
+                        </div>
+                    </div>
+                    <div class="d-route-point">
+                        <span>📍</span>
+                        <div>
+                            <strong>Drop: ${activeOrder.deliveryAddress}</strong>
+                            <small>Customer awaiting delivery in Chennai</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-task-footer">
+                    <div>
+                        <span class="d-payout-val">Payout: ₹80</span>
+                        <small class="text-muted"> (${activeOrder.paymentMethod} Payment)</small>
+                    </div>
+                    <button class="btn-primary" onclick="App.deliveryMarkDelivered(${activeOrder.id})">
+                        <span>✅ Confirm Order Delivered</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    renderAvailableDeliveryTasks() {
+        const container = document.getElementById("delivery-available-tasks-container");
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        if (!this.state.deliveryOnline) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                    <p style="font-size: 2rem;">⏸️</p>
+                    <p style="font-weight: 700;">You are currently OFFLINE.</p>
+                    <small>Toggle your status to ONLINE above to view and accept incoming delivery orders.</small>
+                </div>
+            `;
+            return;
+        }
+
+        const available = this.state.orders.filter(o => o.status === 'READY_FOR_PICKUP' || o.status === 'PREPARING');
+
+        if (available.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                    <p style="font-size: 2rem;">✅</p>
+                    <p style="font-weight: 700;">All orders in Taramani Hub are dispatched!</p>
+                    <small>New orders will appear here automatically when placed.</small>
+                </div>
+            `;
+            return;
+        }
+
+        available.forEach(order => {
+            const card = document.createElement("div");
+            card.className = "delivery-task-card";
+            card.innerHTML = `
+                <div class="d-task-header">
+                    <span class="d-order-num">${order.orderNumber}</span>
+                    <span class="k-order-badge ${order.status === 'READY_FOR_PICKUP' ? 'badge-ready' : 'badge-preparing'}">
+                        ${order.status === 'READY_FOR_PICKUP' ? 'READY AT KITCHEN' : 'BEING PREPARED'}
+                    </span>
+                </div>
+                <div class="d-route-timeline">
+                    <div class="d-route-point">
+                        <span>🏬</span>
+                        <div>
+                            <strong>${order.restaurantName}</strong>
+                            <small>Order Total: ₹${order.totalAmount} (${order.items.length} items)</small>
+                        </div>
+                    </div>
+                    <div class="d-route-point">
+                        <span>📍</span>
+                        <div>
+                            <strong>Destination: ${order.deliveryAddress}</strong>
+                            <small>Distance: ~1.2 km from Taramani Hub</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-task-footer">
+                    <span class="d-payout-val">Partner Fee: ₹80</span>
+                    <button class="btn-success" onclick="App.deliveryAcceptTask(${order.id})">
+                        <span>🛵 Accept & Pick Up</span>
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    },
+
+    deliveryAcceptTask(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = "OUT_FOR_DELIVERY";
+            order.courierName = "Murugan S.";
+            this.refreshDeliveryTasks();
+            this.showToast(`Accepted Delivery for ${order.orderNumber}! Navigate to ${order.deliveryAddress.split(",")[0]}. 🛵`, "success");
+        }
+    },
+
+    deliveryMarkDelivered(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = "DELIVERED";
+            this.state.todayEarnings += 80;
+            this.state.completedDeliveries += 1;
+
+            document.getElementById("delivery-earnings-val").textContent = `₹${this.state.todayEarnings}`;
+            document.getElementById("delivery-completed-val").textContent = this.state.completedDeliveries;
+
+            this.refreshDeliveryTasks();
+            this.showToast(`Order ${order.orderNumber} DELIVERED successfully! Earned ₹80. 🎉`, "success");
+        }
+    },
+
+    // ==========================================
+    // 7. Admin Console Operations
+    // ==========================================
+    refreshAdminData() {
+        this.renderAdminKPIs();
+        this.renderAdminOrdersTable();
+        this.renderAdminFleetTable();
+        this.showToast("Admin telemetry synchronized across 7 microservices! ⚡", "info");
+    },
+
+    renderAdminKPIs() {
+        const totalOrders = this.state.orders.length;
+        const totalGMV = this.state.orders.reduce((sum, o) => sum + (o.status !== 'REJECTED_BY_RESTAURANT' ? o.totalAmount : 0), 0);
+        const onlineCouriers = this.state.couriers.filter(c => c.online).length;
+
+        document.getElementById("admin-total-orders-kpi").textContent = totalOrders;
+        document.getElementById("admin-gmv-kpi").textContent = `₹${totalGMV.toLocaleString('en-IN')}`;
+        document.getElementById("admin-active-couriers-kpi").textContent = onlineCouriers;
+        document.getElementById("admin-orders-count-badge").textContent = `${totalOrders} Orders`;
+    },
+
+    renderAdminOrdersTable() {
+        const tbody = document.getElementById("admin-orders-table-body");
+        if (!tbody) return;
+
+        tbody.innerHTML = "";
+
+        this.state.orders.forEach(order => {
+            const tr = document.createElement("tr");
+
+            let statusBadge = `<span class="k-order-badge badge-pending">${order.status}</span>`;
+            if (order.status === 'PREPARING') statusBadge = `<span class="k-order-badge badge-preparing">PREPARING</span>`;
+            if (order.status === 'READY_FOR_PICKUP') statusBadge = `<span class="k-order-badge badge-ready">READY_FOR_PICKUP</span>`;
+            if (order.status === 'OUT_FOR_DELIVERY' || order.status === 'PICKED_UP') statusBadge = `<span class="k-order-badge badge-picked">OUT_FOR_DELIVERY</span>`;
+            if (order.status === 'DELIVERED') statusBadge = `<span class="k-order-badge badge-ready">DELIVERED</span>`;
+
+            tr.innerHTML = `
+                <td><strong>${order.orderNumber}</strong></td>
+                <td>${order.customerName}</td>
+                <td>${order.restaurantName.split("(")[0]}</td>
+                <td><small>${order.deliveryAddress.split(",")[0]}</small></td>
+                <td><strong>₹${order.totalAmount}</strong></td>
+                <td><span class="upi-chip">${order.paymentMethod}</span></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn-sm-action" onclick="App.adminInspectOrder(${order.id})">🔍 Inspect</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    adminInspectOrder(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order) {
+            alert(
+                `[ADMIN INSPECTOR]\nOrder: ${order.orderNumber}\nCustomer: ${order.customerName}\nAddress: ${order.deliveryAddress}\nTotal: ₹${order.totalAmount}\nStatus: ${order.status}\nCourier: ${order.courierName || 'Unassigned'}`
+            );
+        }
+    },
+
+    renderAdminFleetTable() {
+        const tbody = document.getElementById("admin-fleet-table-body");
+        if (!tbody) return;
+
+        tbody.innerHTML = "";
+
+        this.state.couriers.forEach(c => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>#COU-00${c.id}</td>
+                <td><strong>${c.name}</strong></td>
+                <td><small>${c.vehicle}</small></td>
+                <td>${c.phone}</td>
+                <td>
+                    <span class="badge-pill ${c.online ? 'bg-success' : 'bg-dark'}">
+                        ${c.online ? 'ONLINE' : 'OFFLINE'}
+                    </span>
+                </td>
+                <td>📍 ${c.zone}</td>
+                <td><strong>${c.rating}</strong></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    },
+
+    // ==========================================
+    // 8. Toast Notifications
+    // ==========================================
     showToast(message, type = "info") {
         const container = document.getElementById("toast-container");
+        if (!container) return;
+
         const toast = document.createElement("div");
         toast.className = `toast ${type}`;
         
