@@ -3,32 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CraveBite | Fast & Fresh Food Delivery</title>
-    <meta name="description" content="Order delicious food from your favorite local restaurants with real-time delivery tracking.">
+    <title>CraveBite | Chennai & Taramani Multi-Role Food Platform</title>
+    <meta name="description" content="End-to-end food delivery platform for Customers, Restaurant Kitchens, Delivery Partners, and Admins.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- App Container -->
     <div id="app" class="app-root">
 
-        <!-- Top Navigation (Visible on Home & View-Only) -->
-        <header id="main-header" class="header hidden">
-            <div class="header-content">
-                <div class="brand-group">
-                    <div class="logo-icon">🍔</div>
-                    <span class="logo-text">Crave<span class="highlight">Bite</span></span>
+        <!-- Top Role Navigation Switcher Bar -->
+        <nav id="role-nav-bar" class="role-nav-bar">
+            <div class="role-nav-container">
+                <div class="role-brand" onclick="App.switchRole('customer')">
+                    <span class="role-brand-icon">🍔</span>
+                    <span class="role-brand-name">Crave<span class="highlight">Bite</span></span>
+                    <span class="role-badge-city">CHENNAI HUB</span>
                 </div>
 
-                <!-- Current Location Bar -->
+                <div class="role-tabs">
+                    <button id="tab-role-customer" class="role-tab active" onclick="App.switchRole('customer')">
+                        <span class="tab-icon">🛍️</span>
+                        <span class="tab-label">Customer App</span>
+                    </button>
+                    <button id="tab-role-restaurant" class="role-tab" onclick="App.switchRole('restaurant')">
+                        <span class="tab-icon">🍳</span>
+                        <span class="tab-label">Restaurant Kitchen</span>
+                        <span id="badge-restaurant-orders" class="role-notify-badge hidden">0</span>
+                    </button>
+                    <button id="tab-role-delivery" class="role-tab" onclick="App.switchRole('delivery')">
+                        <span class="tab-icon">🛵</span>
+                        <span class="tab-label">Delivery Partner</span>
+                        <span id="badge-delivery-tasks" class="role-notify-badge hidden">0</span>
+                    </button>
+                    <button id="tab-role-admin" class="role-tab" onclick="App.switchRole('admin')">
+                        <span class="tab-icon">⚙️</span>
+                        <span class="tab-label">Admin Console</span>
+                    </button>
+                </div>
+
+                <div class="role-persona-box">
+                    <span class="persona-indicator-dot"></span>
+                    <span id="current-persona-name">Customer (Alex)</span>
+                    <button class="btn-persona-quick" onclick="App.openPersonaModal()" title="Switch Persona / Login">🔄 Switch</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Customer Top Navigation Header -->
+        <header id="customer-header" class="header">
+            <div class="header-content">
+                <!-- Location Pill -->
                 <div class="location-pill" id="header-location-pill" onclick="App.openLocationSelector()">
                     <span class="pin-icon">📍</span>
                     <div class="location-meta">
                         <span class="label">DELIVERING TO</span>
-                        <span class="address-text" id="header-address-text">Select Address</span>
+                        <span class="address-text" id="header-address-text">Taramani, Chennai</span>
                     </div>
                     <span class="chevron">▼</span>
                 </div>
@@ -36,19 +68,14 @@
                 <!-- Search & Quick Filters -->
                 <div class="search-box">
                     <span class="search-icon">🔍</span>
-                    <input type="text" id="global-search-input" placeholder="Search for dishes, cuisines, or restaurants..." oninput="App.onSearchInput(this.value)">
+                    <input type="text" id="global-search-input" placeholder="Search dishes, biryani, dosas, restaurants..." oninput="App.onSearchInput(this.value)">
                 </div>
 
                 <!-- User & Cart Header Actions -->
                 <div class="header-actions">
                     <div id="delivery-status-indicator" class="status-indicator serviceable">
                         <span class="status-dot"></span>
-                        <span id="header-eta-text">25-35 mins</span>
-                    </div>
-                    <div class="user-badge" id="user-badge">
-                        <span class="avatar-icon">👤</span>
-                        <span id="user-name-display">Alex Customer</span>
-                        <button class="logout-btn" onclick="App.logout()" title="Logout">🚪</button>
+                        <span id="header-eta-text">~25 mins</span>
                     </div>
                     <button class="cart-btn" id="cart-toggle-btn" onclick="App.toggleCart()">
                         🛒 <span class="cart-count" id="cart-badge-count">0</span>
@@ -58,7 +85,7 @@
 
             <!-- Out of Service Warning Banner when in View-Only mode -->
             <div id="view-only-warning-banner" class="view-only-banner hidden">
-                <span>⚠️ <strong>Delivery Unavailable in your selected area.</strong> You are currently browsing the menu in View-Only mode.</span>
+                <span>⚠️ <strong>Delivery Unavailable in this zone.</strong> Browsing Chennai menus in View-Only mode.</span>
                 <button class="btn-banner-action" onclick="App.openLocationSelector()">Change Address</button>
             </div>
         </header>
@@ -66,232 +93,471 @@
         <!-- MAIN VIEW CONTAINER -->
         <main id="view-container">
 
-            <!-- 1. LOGIN / AUTH VIEW -->
-            <section id="auth-view" class="view active-view">
-                <div class="auth-card-wrapper">
-                    <div class="auth-hero">
-                        <div class="brand-badge">⚡ Ultra-Fast Microservices Powered</div>
-                        <h1>Satisfy your cravings in <span class="text-gradient">minutes</span>.</h1>
-                        <p>Real-time location verification, live courier GPS tracking, and delicious meals from top-rated restaurants.</p>
-                        <div class="feature-pills">
-                            <span class="pill">🍕 1,000+ Dishes</span>
-                            <span class="pill">📍 Precise Geo-fencing</span>
-                            <span class="pill">⚡ 25 Min Delivery</span>
+            <!-- ======================================================== -->
+            <!-- 1. CUSTOMER VIEW -->
+            <!-- ======================================================== -->
+            <div id="customer-view-wrapper" class="role-view active-role-view">
+                <!-- Out of Service Screen -->
+                <section id="out-of-service-view" class="view hidden">
+                    <div class="service-alert-card">
+                        <div class="alert-art">
+                            <div class="art-circle">🛵💨</div>
+                            <div class="no-entry-badge">⛔</div>
                         </div>
-                    </div>
-
-                    <div class="auth-card">
-                        <div class="auth-tabs">
-                            <button id="tab-login" class="tab-btn active" onclick="App.switchAuthTab('login')">Sign In</button>
-                            <button id="tab-register" class="tab-btn" onclick="App.switchAuthTab('register')">Register</button>
+                        <div class="alert-status-badge">OUT OF SERVICE ZONE</div>
+                        <h1>We Don't Deliver Here Yet!</h1>
+                        <p class="alert-message">
+                            We checked our coverage map for <strong id="out-address-display">Selected Location</strong>.
+                            Currently, our active couriers and kitchen partners are outside this delivery radius.
+                        </p>
+                        <div class="service-stats-grid">
+                            <div class="stat-box">
+                                <span class="stat-label">Calculated Distance</span>
+                                <span class="stat-val text-danger" id="out-distance-display">42.5 km</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Max Service Radius</span>
+                                <span class="stat-val">15.0 km</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Nearest Active Hub</span>
+                                <span class="stat-val">Taramani Hub</span>
+                            </div>
                         </div>
-
-                        <!-- Login Form -->
-                        <form id="login-form" class="auth-form" onsubmit="App.handleLogin(event)">
-                            <div class="form-group">
-                                <label for="login-username">Username or Email</label>
-                                <input type="text" id="login-username" value="customer1" placeholder="e.g. customer1" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="login-password">Password</label>
-                                <input type="password" id="login-password" value="password" placeholder="Enter password" required>
-                            </div>
-                            <button type="submit" class="btn-primary w-100" id="login-submit-btn">
-                                <span>Sign In & Continue</span> ➔
+                        <div class="out-of-service-actions">
+                            <button class="btn-primary btn-lg" onclick="App.openLocationSelector()">
+                                <span>📍 Change Delivery Address</span>
                             </button>
-                        </form>
-
-                        <!-- Register Form -->
-                        <form id="register-form" class="auth-form hidden" onsubmit="App.handleRegister(event)">
-                            <div class="form-group">
-                                <label for="reg-username">Username</label>
-                                <input type="text" id="reg-username" placeholder="Choose a username" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="reg-email">Email Address</label>
-                                <input type="email" id="reg-email" placeholder="you@example.com" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="reg-password">Password</label>
-                                <input type="password" id="reg-password" placeholder="Minimum 6 characters" required>
-                            </div>
-                            <button type="submit" class="btn-primary w-100" id="reg-submit-btn">
-                                <span>Create Account</span> ➔
+                            <button class="btn-secondary btn-lg" onclick="App.enterViewOnlyMode()">
+                                <span>👀 Browse Menus in View-Only Mode</span>
                             </button>
-                        </form>
-
-                        <div class="auth-divider"><span>OR DEMO QUICK ACCESS</span></div>
-                        <button class="btn-secondary w-100" onclick="App.demoLogin()">🚀 Instant Guest Demo Login</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 2. PRE-HOME LOCATION GATEKEEPER MODAL / SCREEN -->
-            <div id="location-modal-overlay" class="modal-overlay hidden">
-                <div class="location-modal">
-                    <div class="modal-header">
-                        <div class="icon-circle">📍</div>
-                        <div>
-                            <h2>Choose Delivery Location</h2>
-                            <p>Verify if CraveBite delivery service is available at your doorstep</p>
+                        </div>
+                        <div class="notify-box">
+                            <p class="notify-title">Want CraveBite in your neighborhood in Tamil Nadu?</p>
+                            <form id="notify-form" class="notify-form" onsubmit="App.handleNotifyMe(event)">
+                                <input type="email" id="notify-email" placeholder="Enter email to get notified when we launch..." required>
+                                <button type="submit" class="btn-notify">Notify Me 🔔</button>
+                            </form>
                         </div>
                     </div>
+                </section>
 
-                    <!-- Auto Detect GPS Button -->
-                    <div class="gps-trigger-section">
-                        <button class="btn-gps" id="btn-gps-detect" onclick="App.detectCurrentLocation()">
-                            <div class="gps-icon-pulse">
-                                <span class="pulse-ring"></span>
-                                <span class="gps-icon">🎯</span>
+                <!-- Customer Home View -->
+                <section id="home-view" class="view">
+                    <div class="home-container">
+                        <!-- Hero Banner -->
+                        <div class="home-hero-banner">
+                            <div class="hero-left">
+                                <div class="verified-pill">✅ Delivery Available in <span id="hero-address-highlight">Taramani, Chennai</span></div>
+                                <h2>Fresh food delivered in Chennai in <span class="hero-accent" id="hero-eta-display">~25 mins</span>.</h2>
+                                <p>Authentic South Indian dosas, fragrant biryanis, Chettinad gravies, street shawarmas, and more.</p>
                             </div>
-                            <div class="gps-text">
-                                <span class="title">Use Current GPS Location</span>
-                                <span class="subtitle">Using browser high-accuracy geolocation</span>
+                            <div class="hero-right">
+                                <div class="hero-stat-card">
+                                    <span class="stat-num">25+</span>
+                                    <span class="stat-desc">Chennai Kitchens</span>
+                                </div>
+                                <div class="hero-stat-card">
+                                    <span class="stat-num">4.9 ★</span>
+                                    <span class="stat-desc">Average Rating</span>
+                                </div>
                             </div>
-                            <span class="arrow">➔</span>
-                        </button>
-                    </div>
-
-                    <div class="modal-divider"><span>OR SEARCH MANUALLY</span></div>
-
-                    <!-- Search Location Bar -->
-                    <div class="location-search-wrapper">
-                        <div class="search-input-group">
-                            <span class="search-lens">🔍</span>
-                            <input type="text" id="address-search-input" placeholder="Type street, area, neighborhood, or city..." oninput="App.onAddressSearch(this.value)">
-                            <button id="clear-search-btn" class="clear-btn hidden" onclick="App.clearAddressSearch()">✕</button>
                         </div>
 
-                        <!-- Autocomplete Suggestions List -->
-                        <div id="location-suggestions-list" class="suggestions-list">
-                            <!-- Populated dynamically via JS -->
+                        <!-- Cuisines Filter -->
+                        <div class="categories-section">
+                            <h3>Popular Cuisines & Categories</h3>
+                            <div class="category-scroll" id="category-chips-container">
+                                <button class="chip active" onclick="App.filterByCategory('ALL')">✨ All Delicacies</button>
+                                <button class="chip" onclick="App.filterByCategory('South Indian')">🥞 South Indian</button>
+                                <button class="chip" onclick="App.filterByCategory('Biryani')">🍛 Biryani</button>
+                                <button class="chip" onclick="App.filterByCategory('Chettinad')">🍗 Chettinad</button>
+                                <button class="chip" onclick="App.filterByCategory('North Indian')">🥘 North Indian</button>
+                                <button class="chip" onclick="App.filterByCategory('Snacks')">☕ Snacks & Filter Coffee</button>
+                                <button class="chip" onclick="App.filterByCategory('Street Food')">🌯 Street Food & Shawarma</button>
+                                <button class="chip" onclick="App.filterByCategory('Pizza')">🍕 Pizza</button>
+                                <button class="chip" onclick="App.filterByCategory('Burgers')">🍔 Burgers</button>
+                            </div>
+                        </div>
+
+                        <!-- Dishes Grid -->
+                        <div class="catalog-section">
+                            <div class="section-header">
+                                <div>
+                                    <h3 id="catalog-title">Available Restaurants & Dishes</h3>
+                                    <p class="section-subtitle">Real-time dish availability updated by restaurant kitchens</p>
+                                </div>
+                                <div class="filter-controls">
+                                    <select id="sort-select" onchange="App.onSortChange(this.value)">
+                                        <option value="popular">Most Popular ★</option>
+                                        <option value="price-asc">Price: Low to High</option>
+                                        <option value="price-desc">Price: High to Low</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="food-grid" id="food-items-grid">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Customer Live Orders Tracking Section -->
+                        <div class="customer-active-orders-section">
+                            <div class="section-header">
+                                <div>
+                                    <h3>Your Recent Orders & Live Tracking 📦</h3>
+                                    <p class="section-subtitle">Track kitchen preparation, courier pickup, and live delivery updates</p>
+                                </div>
+                                <button class="btn-refresh" onclick="App.renderCustomerRecentOrders()">🔄 Refresh Orders</button>
+                            </div>
+                            <div id="customer-orders-list" class="customer-orders-grid">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- 2. RESTAURANT KITCHEN VIEW -->
+            <!-- ======================================================== -->
+            <div id="restaurant-view-wrapper" class="role-view hidden">
+                <div class="role-dashboard-container">
+                    <!-- Restaurant Header Banner -->
+                    <div class="dashboard-hero restaurant-hero">
+                        <div class="hero-content-flex">
+                            <div>
+                                <div class="badge-role-tag">👨‍🍳 RESTAURANT KITCHEN PORTAL</div>
+                                <h2>A2B & Chennai Kitchen Partners (Taramani Branch)</h2>
+                                <p>Manage live incoming customer orders, accept/reject items, and control real-time dish availability.</p>
+                            </div>
+                            <div class="hero-actions-right">
+                                <button class="btn-primary" onclick="App.openAddDishModal()">➕ Add New Dish</button>
+                                <button class="btn-secondary" onclick="App.refreshRestaurantData()">🔄 Refresh Queue</button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Location Checking Radar / Spinner State -->
-                    <div id="serviceability-spinner" class="serviceability-loader hidden">
-                        <div class="radar-spinner"></div>
-                        <p class="loader-title">Checking Delivery Serviceability...</p>
-                        <p class="loader-sub">Verifying courier coverage and nearest restaurant kitchen hubs</p>
+                    <!-- Kitchen Metrics -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-icon">📥</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="kitchen-incoming-count">0</span>
+                                <span class="metric-lbl">Pending Orders</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">🍳</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="kitchen-preparing-count">0</span>
+                                <span class="metric-lbl">In Preparation</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">📦</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="kitchen-ready-count">0</span>
+                                <span class="metric-lbl">Ready for Courier Pickup</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">🍱</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="kitchen-menu-count">8</span>
+                                <span class="metric-lbl">Active Menu Items</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kitchen Main Columns: Orders Queue & Menu Stock Control -->
+                    <div class="kitchen-grid-layout">
+                        <!-- Left Column: Live Orders Queue -->
+                        <div class="dashboard-panel">
+                            <div class="panel-header">
+                                <h3>Live Kitchen Orders Feed 📋</h3>
+                                <span class="live-dot-indicator"><span class="pulse-dot"></span> LIVE AUTO-SYNC</span>
+                            </div>
+                            <div class="panel-body" id="kitchen-orders-container">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Menu Stock & Availability Manager -->
+                        <div class="dashboard-panel">
+                            <div class="panel-header">
+                                <h3>Menu Item Availability & Stock Control 🍲</h3>
+                                <small class="text-muted">Toggling updates customer app immediately</small>
+                            </div>
+                            <div class="panel-body" id="kitchen-menu-items-container">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. OUT-OF-SERVICE AREA SCREEN -->
-            <section id="out-of-service-view" class="view hidden">
-                <div class="service-alert-card">
-                    <div class="alert-art">
-                        <div class="art-circle">🛵💨</div>
-                        <div class="no-entry-badge">⛔</div>
-                    </div>
-
-                    <div class="alert-status-badge">OUT OF SERVICE ZONE</div>
-                    <h1>We Don't Deliver Here Yet!</h1>
-                    <p class="alert-message">
-                        We checked our coverage map for <strong id="out-address-display">Selected Location</strong>.
-                        Currently, our active couriers and kitchen partners are outside this delivery radius.
-                    </p>
-
-                    <div class="service-stats-grid">
-                        <div class="stat-box">
-                            <span class="stat-label">Calculated Distance</span>
-                            <span class="stat-val text-danger" id="out-distance-display">42.5 km</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-label">Max Service Radius</span>
-                            <span class="stat-val">15.0 km</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-label">Nearest Active Hub</span>
-                            <span class="stat-val">Taramani Hub</span>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="out-of-service-actions">
-                        <button class="btn-primary btn-lg" onclick="App.openLocationSelector()">
-                            <span>📍 Change Delivery Address</span>
-                        </button>
-                        <button class="btn-secondary btn-lg" onclick="App.enterViewOnlyMode()">
-                            <span>👀 Browse Menus in View-Only Mode</span>
-                        </button>
-                    </div>
-
-                    <!-- Expansion Notification Form -->
-                    <div class="notify-box">
-                        <p class="notify-title">Want CraveBite in your neighborhood in Tamil Nadu?</p>
-                        <form id="notify-form" class="notify-form" onsubmit="App.handleNotifyMe(event)">
-                            <input type="email" id="notify-email" placeholder="Enter email to get notified when we launch..." required>
-                            <button type="submit" class="btn-notify">Notify Me 🔔</button>
-                        </form>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 4. MAIN HOME PAGE VIEW (SERVICEABLE) -->
-            <section id="home-view" class="view hidden">
-                <div class="home-container">
-
+            <!-- ======================================================== -->
+            <!-- 3. DELIVERY PARTNER VIEW -->
+            <!-- ======================================================== -->
+            <div id="delivery-view-wrapper" class="role-view hidden">
+                <div class="role-dashboard-container">
                     <!-- Delivery Hero Banner -->
-                    <div class="home-hero-banner">
-                        <div class="hero-left">
-                            <div class="verified-pill">✅ Delivery Available to <span id="hero-address-highlight">Taramani, Chennai</span></div>
-                            <h2>Fresh food delivered in Chennai in <span class="hero-accent" id="hero-eta-display">~25 mins</span>.</h2>
-                            <p>Order from authentic South Indian kitchens, biryani masters, Chettinad specials, and top local eateries.</p>
-                        </div>
-                        <div class="hero-right">
-                            <div class="hero-stat-card">
-                                <span class="stat-num">25+</span>
-                                <span class="stat-desc">Chennai Kitchens</span>
-                            </div>
-                            <div class="hero-stat-card">
-                                <span class="stat-num">4.9 ★</span>
-                                <span class="stat-desc">Average Rating</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Category Pills Horizontal Scroll -->
-                    <div class="categories-section">
-                        <h3>Popular Cuisines & Categories</h3>
-                        <div class="category-scroll" id="category-chips-container">
-                            <button class="chip active" onclick="App.filterByCategory('ALL')">✨ All Delicacies</button>
-                            <button class="chip" onclick="App.filterByCategory('South Indian')">🥞 South Indian</button>
-                            <button class="chip" onclick="App.filterByCategory('Biryani')">🍛 Biryani</button>
-                            <button class="chip" onclick="App.filterByCategory('Chettinad')">🍗 Chettinad</button>
-                            <button class="chip" onclick="App.filterByCategory('North Indian')">🥘 North Indian</button>
-                            <button class="chip" onclick="App.filterByCategory('Snacks')">☕ Snacks & Filter Coffee</button>
-                            <button class="chip" onclick="App.filterByCategory('Street Food')">🌯 Street Food & Shawarma</button>
-                            <button class="chip" onclick="App.filterByCategory('Pizza')">🍕 Pizza</button>
-                            <button class="chip" onclick="App.filterByCategory('Burgers')">🍔 Burgers</button>
-                        </div>
-                    </div>
-
-                    <!-- Restaurants & Food Catalog Grid -->
-                    <div class="catalog-section">
-                        <div class="section-header">
+                    <div class="dashboard-hero delivery-hero">
+                        <div class="hero-content-flex">
                             <div>
-                                <h3 id="catalog-title">Available Restaurants & Dishes</h3>
-                                <p class="section-subtitle">Showing menus serviceable to your location</p>
+                                <div class="badge-role-tag">🛵 DELIVERY FLEET PORTAL</div>
+                                <h2>Murugan S. (Chennai Delivery Partner - Hero Splendor)</h2>
+                                <p>Taramani Hub • Zone Coverage: Ramanujan IT City, Ascendas, Velachery, Adyar</p>
                             </div>
-                            <div class="filter-controls">
-                                <select id="sort-select" onchange="App.onSortChange(this.value)">
-                                    <option value="popular">Most Popular ★</option>
-                                    <option value="price-asc">Price: Low to High</option>
-                                    <option value="price-desc">Price: High to Low</option>
-                                </select>
+                            <div class="delivery-status-switch-box">
+                                <span class="status-label-txt" id="delivery-online-label">Status: <strong>ONLINE</strong></span>
+                                <label class="switch">
+                                    <input type="checkbox" id="delivery-availability-toggle" checked onchange="App.toggleDeliveryAvailability(this.checked)">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Partner Metrics -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-icon">💰</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="delivery-earnings-val">₹640</span>
+                                <span class="metric-lbl">Today's Earnings</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">📦</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="delivery-completed-val">6</span>
+                                <span class="metric-lbl">Orders Delivered</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">⭐</span>
+                            <div class="metric-data">
+                                <span class="metric-num">4.95 ★</span>
+                                <span class="metric-lbl">Customer Rating</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">📍</span>
+                            <div class="metric-data">
+                                <span class="metric-num">Taramani</span>
+                                <span class="metric-lbl">Active GPS Zone</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Tasks Layout -->
+                    <div class="delivery-grid-layout">
+                        <!-- Active Delivery Task (if any) -->
+                        <div class="dashboard-panel active-task-panel">
+                            <div class="panel-header">
+                                <h3>Active Delivery Mission 🎯</h3>
+                                <span class="badge-pill bg-primary" id="active-task-badge">No Active Task</span>
+                            </div>
+                            <div class="panel-body" id="delivery-active-mission-container">
+                                <!-- Populated dynamically -->
                             </div>
                         </div>
 
-                        <div class="food-grid" id="food-items-grid">
-                            <!-- Populated dynamically via JS -->
+                        <!-- Available Orders for Pickup Queue -->
+                        <div class="dashboard-panel">
+                            <div class="panel-header">
+                                <h3>Available Deliveries for Pickup 📍</h3>
+                                <button class="btn-sm-action" onclick="App.refreshDeliveryTasks()">🔄 Refresh</button>
+                            </div>
+                            <div class="panel-body" id="delivery-available-tasks-container">
+                                <!-- Populated dynamically -->
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- 4. ADMIN CONSOLE VIEW -->
+            <!-- ======================================================== -->
+            <div id="admin-view-wrapper" class="role-view hidden">
+                <div class="role-dashboard-container">
+                    <!-- Admin Hero Banner -->
+                    <div class="dashboard-hero admin-hero">
+                        <div class="hero-content-flex">
+                            <div>
+                                <div class="badge-role-tag">⚙️ PLATFORM OPERATIONS & ADMIN CONSOLE</div>
+                                <h2>CraveBite Chennai Super Admin Dashboard</h2>
+                                <p>Real-time microservices telemetry, global orders ledger, courier fleet dispatch, and revenue metrics.</p>
+                            </div>
+                            <div class="hero-actions-right">
+                                <button class="btn-primary" onclick="App.refreshAdminData()">🔄 Sync Platform State</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin KPI Cards -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-icon">📊</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="admin-total-orders-kpi">0</span>
+                                <span class="metric-lbl">Total Orders Today</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">💵</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="admin-gmv-kpi">₹0</span>
+                                <span class="metric-lbl">Gross Platform GMV</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">🛵</span>
+                            <div class="metric-data">
+                                <span class="metric-num" id="admin-active-couriers-kpi">8</span>
+                                <span class="metric-lbl">Couriers Online (Chennai)</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">⚡</span>
+                            <div class="metric-data">
+                                <span class="metric-num text-success">99.9%</span>
+                                <span class="metric-lbl">Platform Health (7/7 Up)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Microservices Health Strip -->
+                    <div class="admin-health-strip">
+                        <h4 class="health-strip-title">Spring Boot Microservices Health Radar</h4>
+                        <div class="health-grid">
+                            <div class="health-chip up"><span class="chip-dot"></span> API Gateway (:8090)</div>
+                            <div class="health-chip up"><span class="chip-dot"></span> Auth Service (:8081)</div>
+                            <div class="health-chip up"><span class="chip-dot"></span> Order Service (:8082)</div>
+                            <div class="health-chip up"><span class="chip-dot"></span> Restaurant Service (:8083)</div>
+                            <div class="health-chip up"><span class="chip-dot"></span> Delivery Service (:8084)</div>
+                            <div class="health-chip up"><span class="chip-dot"></span> Payment Service (:8085)</div>
+                            <div class="health-chip up"><span class="chip-dot"></span> Search Service (:8086)</div>
+                        </div>
+                    </div>
+
+                    <!-- Global Orders Table -->
+                    <div class="dashboard-panel full-width-panel">
+                        <div class="panel-header">
+                            <h3>Global Orders Ledger 📜</h3>
+                            <span class="badge-pill bg-dark" id="admin-orders-count-badge">0 Orders</span>
+                        </div>
+                        <div class="panel-body table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Restaurant</th>
+                                        <th>Delivery Location</th>
+                                        <th>Amount</th>
+                                        <th>Payment</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-orders-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Partners Fleet Table -->
+                    <div class="dashboard-panel full-width-panel">
+                        <div class="panel-header">
+                            <h3>Chennai Delivery Fleet Dispatch & GPS Monitor 🛵</h3>
+                            <span class="badge-pill bg-success">Taramani Hub Active</span>
+                        </div>
+                        <div class="panel-body table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Partner ID</th>
+                                        <th>Courier Name</th>
+                                        <th>Vehicle</th>
+                                        <th>Phone</th>
+                                        <th>Availability</th>
+                                        <th>Current GPS Zone</th>
+                                        <th>Rating</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-fleet-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
-        <!-- CART SIDE DRAWER -->
+        <!-- ======================================================== -->
+        <!-- MODALS & OVERLAYS -->
+        <!-- ======================================================== -->
+
+        <!-- 1. Location Gatekeeper Modal -->
+        <div id="location-modal-overlay" class="modal-overlay hidden">
+            <div class="location-modal">
+                <div class="modal-header">
+                    <div class="icon-circle">📍</div>
+                    <div>
+                        <h2>Choose Delivery Location</h2>
+                        <p>Verify if CraveBite delivery service is available at your doorstep in Chennai</p>
+                    </div>
+                    <button class="close-modal-btn" onclick="App.closeLocationSelector()">✕</button>
+                </div>
+
+                <!-- Auto Detect GPS Button -->
+                <div class="gps-trigger-section">
+                    <button class="btn-gps" id="btn-gps-detect" onclick="App.detectCurrentLocation()">
+                        <div class="gps-icon-pulse">
+                            <span class="pulse-ring"></span>
+                            <span class="gps-icon">🎯</span>
+                        </div>
+                        <div class="gps-text">
+                            <span class="title">Use Current GPS Location</span>
+                            <span class="subtitle">Using browser high-accuracy geolocation</span>
+                        </div>
+                        <span class="arrow">➔</span>
+                    </button>
+                </div>
+
+                <div class="modal-divider"><span>OR SELECT CHENNAI NEIGHBORHOOD</span></div>
+
+                <!-- Search Location Bar -->
+                <div class="location-search-wrapper">
+                    <div class="search-input-group">
+                        <span class="search-lens">🔍</span>
+                        <input type="text" id="address-search-input" placeholder="Type street, area (e.g. Taramani, Velachery, Adyar)..." oninput="App.onAddressSearch(this.value)">
+                        <button id="clear-search-btn" class="clear-btn hidden" onclick="App.clearAddressSearch()">✕</button>
+                    </div>
+
+                    <!-- Autocomplete Suggestions List -->
+                    <div id="location-suggestions-list" class="suggestions-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Serviceability Spinner -->
+                <div id="serviceability-spinner" class="serviceability-loader hidden">
+                    <div class="radar-spinner"></div>
+                    <p class="loader-title">Checking Delivery Serviceability...</p>
+                    <p class="loader-sub">Verifying courier coverage from Taramani Hub</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Cart Side Drawer -->
         <div id="cart-drawer-overlay" class="drawer-overlay hidden" onclick="App.toggleCart()"></div>
         <aside id="cart-drawer" class="cart-drawer hidden">
             <div class="drawer-header">
@@ -308,7 +574,7 @@
             <div class="drawer-footer" id="cart-footer">
                 <div class="cart-summary-row">
                     <span>Subtotal</span>
-                    <span id="cart-subtotal">$0.00</span>
+                    <span id="cart-subtotal">₹0</span>
                 </div>
                 <div class="cart-summary-row">
                     <span>Delivery Fee</span>
@@ -316,7 +582,7 @@
                 </div>
                 <div class="cart-summary-row total-row">
                     <span>Total Amount</span>
-                    <span id="cart-total-amount">$0.00</span>
+                    <span id="cart-total-amount">₹0</span>
                 </div>
                 <button class="btn-checkout w-100" id="btn-place-order" onclick="App.openPaymentModal()">
                     <span>Proceed to Payment 💳</span> ➔
@@ -324,7 +590,7 @@
             </div>
         </aside>
 
-        <!-- PAYMENT PROCESSING MODAL -->
+        <!-- 3. Payment Processing Modal -->
         <div id="payment-modal-overlay" class="modal-overlay hidden">
             <div class="payment-modal">
                 <div class="modal-header">
@@ -402,7 +668,7 @@
             </div>
         </div>
 
-        <!-- ORDER SUCCESS & LIVE TRACKING MODAL -->
+        <!-- 4. Order Success Modal -->
         <div id="order-success-modal" class="modal-overlay hidden">
             <div class="success-modal">
                 <div class="success-icon-animated">🎉</div>
@@ -411,13 +677,13 @@
                 <p class="order-id-label">Order Number: <strong id="success-order-num">ORD-CHN-1001</strong></p>
                 <p class="order-dest-label">Delivering to: <strong id="success-order-address">Taramani, Chennai</strong></p>
 
-                <!-- Microservice Kafka Pipeline Timeline -->
+                <!-- Microservice Timeline -->
                 <div class="microservice-timeline">
                     <div class="timeline-step done">
                         <span class="step-dot">✓</span>
                         <div class="step-info">
                             <strong>Order Service (:8082)</strong>
-                            <small>Order status: PAID (Kafka event emitted)</small>
+                            <small>Order created & status: PAID</small>
                         </div>
                     </div>
                     <div class="timeline-step done">
@@ -431,25 +697,126 @@
                         <span class="step-dot pulse">🍳</span>
                         <div class="step-info">
                             <strong>Restaurant Kitchen (:8083)</strong>
-                            <small>Food is being freshly prepared</small>
+                            <small>Sent to kitchen queue for acceptance</small>
                         </div>
                     </div>
                     <div class="timeline-step">
                         <span class="step-dot">🛵</span>
                         <div class="step-info">
                             <strong>Delivery Service (:8084)</strong>
-                            <small>Partner assigned (ETA: ~20-25 mins)</small>
+                            <small>Awaiting partner pickup in Taramani Hub</small>
                         </div>
                     </div>
                 </div>
 
-                <button class="btn-primary w-100" onclick="App.closeSuccessModal()">
-                    <span>Back to Home Menu</span>
-                </button>
+                <div class="modal-footer-action-double">
+                    <button class="btn-secondary" onclick="App.closeSuccessModal()">
+                        <span>Stay on Customer Menu</span>
+                    </button>
+                    <button class="btn-primary" onclick="App.viewOrderInKitchen()">
+                        <span>Go to Restaurant Kitchen 👨‍🍳</span> ➔
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Toast Notifications -->
+        <!-- 5. Add Dish Modal (Restaurant) -->
+        <div id="add-dish-modal" class="modal-overlay hidden">
+            <div class="location-modal">
+                <div class="modal-header">
+                    <div class="icon-circle">🍲</div>
+                    <div>
+                        <h2>Add New Dish to Menu</h2>
+                        <p>Publish a new culinary item directly to customer app</p>
+                    </div>
+                    <button class="close-modal-btn" onclick="App.closeAddDishModal()">✕</button>
+                </div>
+                <form id="add-dish-form" class="auth-form" onsubmit="App.handleAddDish(event)">
+                    <div class="form-group">
+                        <label>Dish Name</label>
+                        <input type="text" id="new-dish-name" placeholder="e.g. Chettinad Prawn Masala" required>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Category / Cuisine</label>
+                            <select id="new-dish-cat" class="form-select">
+                                <option value="South Indian">South Indian</option>
+                                <option value="Biryani">Biryani</option>
+                                <option value="Chettinad">Chettinad</option>
+                                <option value="North Indian">North Indian</option>
+                                <option value="Snacks">Snacks & Beverages</option>
+                                <option value="Street Food">Street Food</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Price (₹ INR)</label>
+                            <input type="number" id="new-dish-price" placeholder="e.g. 280" min="10" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Emoji Icon</label>
+                        <input type="text" id="new-dish-emoji" value="🍛" placeholder="🍛, 🥘, 🥞, 🍗" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="new-dish-desc" rows="2" class="form-textarea" placeholder="Detailed ingredients & spices..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary w-100">
+                        <span>Save & Publish Dish to Catalog</span> ➔
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 6. Persona Quick Switcher Modal -->
+        <div id="persona-modal" class="modal-overlay hidden">
+            <div class="location-modal">
+                <div class="modal-header">
+                    <div class="icon-circle">👥</div>
+                    <div>
+                        <h2>Switch Active Persona / Role</h2>
+                        <p>Test the platform instantly across all microservice personas</p>
+                    </div>
+                    <button class="close-modal-btn" onclick="App.closePersonaModal()">✕</button>
+                </div>
+                <div class="persona-grid">
+                    <div class="persona-card" onclick="App.selectPersona('customer')">
+                        <div class="persona-icon">🛍️</div>
+                        <div class="persona-info">
+                            <strong>Alex Customer (`customer1`)</strong>
+                            <p>Browse food in Taramani, add to cart, pay with UPI</p>
+                        </div>
+                        <button class="btn-select-persona">Select</button>
+                    </div>
+                    <div class="persona-card" onclick="App.selectPersona('restaurant')">
+                        <div class="persona-icon">👨‍🍳</div>
+                        <div class="persona-info">
+                            <strong>Kitchen Manager (`restaurant1`)</strong>
+                            <p>Accept/Reject orders, toggle dish stock, add dishes</p>
+                        </div>
+                        <button class="btn-select-persona">Select</button>
+                    </div>
+                    <div class="persona-card" onclick="App.selectPersona('delivery')">
+                        <div class="persona-icon">🛵</div>
+                        <div class="persona-info">
+                            <strong>Murugan Delivery Partner (`delivery1`)</strong>
+                            <p>Toggle Online/Offline, accept pickup, mark delivered</p>
+                        </div>
+                        <button class="btn-select-persona">Select</button>
+                    </div>
+                    <div class="persona-card" onclick="App.selectPersona('admin')">
+                        <div class="persona-icon">⚙️</div>
+                        <div class="persona-info">
+                            <strong>Super Admin (`admin`)</strong>
+                            <p>Full platform metrics, orders ledger, fleet radar</p>
+                        </div>
+                        <button class="btn-select-persona">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications Container -->
         <div id="toast-container" class="toast-container"></div>
     </div>
 
