@@ -5,30 +5,43 @@ import com.fooddelivery.search.model.MenuItemDocument;
 import com.fooddelivery.search.model.RestaurantDocument;
 import com.fooddelivery.search.repository.MenuItemSearchRepository;
 import com.fooddelivery.search.repository.RestaurantSearchRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
 
     private final RestaurantSearchRepository restaurantRepo;
     private final MenuItemSearchRepository menuItemRepo;
+    private final Executor searchExecutor;
+
+    public SearchServiceImpl(
+            RestaurantSearchRepository restaurantRepo,
+            MenuItemSearchRepository menuItemRepo,
+            @Qualifier("searchExecutor") Executor searchExecutor) {
+        this.restaurantRepo = restaurantRepo;
+        this.menuItemRepo = menuItemRepo;
+        this.searchExecutor = searchExecutor;
+    }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RestaurantSearchResponse> searchRestaurants(String query, String cuisine, Boolean isOpen, Double minRating) {
+    public List<RestaurantSearchResponse> searchRestaurants(String query, String cuisine, Boolean isOpen,
+            Double minRating) {
         String sanitizedQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String sanitizedCuisine = (cuisine != null && !cuisine.trim().isEmpty()) ? cuisine.trim() : null;
 
-        List<RestaurantDocument> restaurants = restaurantRepo.searchRestaurants(sanitizedQuery, sanitizedCuisine, isOpen, minRating);
+        List<RestaurantDocument> restaurants = restaurantRepo.searchRestaurants(sanitizedQuery, sanitizedCuisine,
+                isOpen, minRating);
         return restaurants.stream()
                 .map(this::mapToRestaurantResponse)
                 .collect(Collectors.toList());
@@ -36,12 +49,14 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MenuItemSearchResponse> searchMenuItems(String query, String category, BigDecimal minPrice, BigDecimal maxPrice, Boolean isAvailable, String cuisine) {
+    public List<MenuItemSearchResponse> searchMenuItems(String query, String category, BigDecimal minPrice,
+            BigDecimal maxPrice, Boolean isAvailable, String cuisine) {
         String sanitizedQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String sanitizedCategory = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
         String sanitizedCuisine = (cuisine != null && !cuisine.trim().isEmpty()) ? cuisine.trim() : null;
 
-        List<MenuItemDocument> items = menuItemRepo.searchMenuItems(sanitizedQuery, sanitizedCategory, minPrice, maxPrice, isAvailable, sanitizedCuisine);
+        List<MenuItemDocument> items = menuItemRepo.searchMenuItems(sanitizedQuery, sanitizedCategory, minPrice,
+                maxPrice, isAvailable, sanitizedCuisine);
         return items.stream()
                 .map(this::mapToMenuItemResponse)
                 .collect(Collectors.toList());
@@ -52,8 +67,18 @@ public class SearchServiceImpl implements SearchService {
     public GlobalSearchResponse globalSearch(String keyword) {
         String q = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : "";
 
-        List<RestaurantSearchResponse> restaurants = searchRestaurants(q, null, null, null);
-        List<MenuItemSearchResponse> foodItems = searchMenuItems(q, null, null, null, null, null);
+        // Execute restaurant search and menu item search concurrently to reduce latency
+        // under high traffic
+        CompletableFuture<List<RestaurantSearchResponse>> restaurantsFuture = CompletableFuture
+                .supplyAsync(() -> searchRestaurants(q, null, null, null), searchExecutor);
+
+        CompletableFuture<List<MenuItemSearchResponse>> foodItemsFuture = CompletableFuture
+                .supplyAsync(() -> searchMenuItems(q, null, null, null, null, null), searchExecutor);
+
+        CompletableFuture.allOf(restaurantsFuture, foodItemsFuture).join();
+
+        List<RestaurantSearchResponse> restaurants = restaurantsFuture.join();
+        List<MenuItemSearchResponse> foodItems = foodItemsFuture.join();
 
         int total = restaurants.size() + foodItems.size();
 
