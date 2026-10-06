@@ -36,26 +36,24 @@ public class ServiceabilityService {
         // 1. Calculate distance from Central Taramani Restaurant Hub
         double hubDistance = calculateHaversineDistanceKm(latitude, longitude, DEFAULT_HUB_LAT, DEFAULT_HUB_LNG);
 
-        // 2. Check active delivery partners within coverage
+        // 2. Concurrently check active delivery partners within coverage using parallel processing
         List<DeliveryPartner> availablePartners = partnerRepository.findByStatus(PartnerStatus.AVAILABLE);
-        int eligiblePartnersCount = 0;
-
-        for (DeliveryPartner partner : availablePartners) {
-            if (partner.getCurrentLatitude() != null && partner.getCurrentLongitude() != null) {
-                double partnerDist = calculateHaversineDistanceKm(latitude, longitude, partner.getCurrentLatitude(), partner.getCurrentLongitude());
-                if (partnerDist <= MAX_DELIVERY_RADIUS_KM) {
-                    eligiblePartnersCount++;
-                }
-            } else {
-                eligiblePartnersCount++;
-            }
-        }
+        long eligiblePartnersCount = availablePartners.parallelStream()
+                .filter(partner -> {
+                    if (partner.getCurrentLatitude() != null && partner.getCurrentLongitude() != null) {
+                        double partnerDist = calculateHaversineDistanceKm(latitude, longitude, partner.getCurrentLatitude(), partner.getCurrentLongitude());
+                        return partnerDist <= MAX_DELIVERY_RADIUS_KM;
+                    }
+                    return true;
+                })
+                .count();
 
         // Default to at least active fleet count if partners are online
-        if (eligiblePartnersCount == 0 && !availablePartners.isEmpty()) {
-            eligiblePartnersCount = availablePartners.size();
-        } else if (eligiblePartnersCount == 0) {
-            eligiblePartnersCount = 4; // default active couriers on duty at Taramani Hub
+        int finalPartnerCount = (int) eligiblePartnersCount;
+        if (finalPartnerCount == 0 && !availablePartners.isEmpty()) {
+            finalPartnerCount = availablePartners.size();
+        } else if (finalPartnerCount == 0) {
+            finalPartnerCount = 4; // default active couriers on duty at Taramani Hub
         }
 
         boolean isServiceable = hubDistance <= MAX_DELIVERY_RADIUS_KM;
@@ -77,7 +75,7 @@ public class ServiceabilityService {
                 .latitude(latitude)
                 .longitude(longitude)
                 .address(address)
-                .availableDeliveryPartners(eligiblePartnersCount)
+                .availableDeliveryPartners(finalPartnerCount)
                 .nearestPartnerDistanceKm(roundedDistance)
                 .estimatedDeliveryMinutes(isServiceable ? estimatedMins : null)
                 .message(message)
